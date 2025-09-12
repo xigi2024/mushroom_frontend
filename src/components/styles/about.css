@@ -1,0 +1,56 @@
+.about-hero-section {
+    background: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), 
+                url("../../assets/about.jpg") center/cover;
+    height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+  }
+  
+  .accordion-button:not(.collapsed) {
+    background-color: #F1FFF0;
+    color: black;
+    font-weight: 500;
+  }
+  
+  .accordion-button:focus {
+    box-shadow: none;
+    border-color: #efefef;
+  }
+  
+  .btn-success {
+    background-color: #198754;
+    border-color: #F1FFF0;
+  }
+  
+  .btn-success:hover {
+    background-color: #157347;
+    border-color: #F1FFF0;
+  }
+  
+  .text-success {
+    color: #198754 !important;
+  }
+  
+  @media (max-width: 768px) {
+    .hero-section {
+      background-attachment: scroll;
+    }
+    
+    .display-4 {
+      font-size: 2rem;
+    }
+  }
+  .nav-pills .nav-link.active, .nav-pills .show>.nav-link
+  {
+border-left: 2px solid #198754;
+background-color: #f2fde4;
+border-bottom: 0px;
+  }
+  .accordion-button{
+    font-weight: 600;
+  }
+  .accordion-item:first-of-type>.accordion-header .accordion-button{
+    font-weight: 600;
+  }

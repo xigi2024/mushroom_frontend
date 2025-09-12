@@ -1,0 +1,58 @@
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+body{
+    font-family: 'Poppins', sans-serif;
+}
+/* Apply Poppins font to headings, paragraphs, and buttons */
+h1, h2, h3, h4, h5, h6, span,
+.accordion-button {
+  font-family: 'Poppins', sans-serif !important;
+}
+p, li, ul, .nav-link, .btn, a,
+.accordion-body {
+  font-family: 'Outfit', sans-serif !important;
+}
+  
+  .nav-link{
+    color: black;
+  }
+  .nav-link:hover{
+    color: #0B8001;
+  }
+  /* genral styles  */
+  .color{
+    color: #15640d;
+  }
+  .button {
+    background-color: #0B8001;
+    color: white;
+    border-radius: 5px;
+    padding: 10px 20px;
+    border: 1px solid transparent; /* ✅ transparent border */
+    cursor: pointer;
+    transition: background-color 0.3s ease, color 0.3s ease, border 0.3s ease;
+    box-shadow: none;
+  }
+  
+  .button:hover{
+    background-color: #fff;
+    color: #0B8001;
+    border: 1px solid #0B8001; 
+    outline: none;
+    box-shadow: none;
+  }
+  .button:focus,
+.button:active {
+  background-color: #fff !important; /* ✅ same as hover */
+  color: #0B8001 !important;
+  border: 1px solid #0B8001 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+  
+.section{
+    padding: 90px 0;
+}

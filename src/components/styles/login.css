@@ -1,0 +1,43 @@
+.login-container {  
+    max-width: 900px;
+  }
+  .login-card {
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .login-left {
+    background-color: #f8f9fa;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 0px;
+  }
+  
+  .login-right {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  
+  .login-icon {
+    position: absolute;
+    margin-left: 10px;
+    top: 10px;
+    color: #999;
+  }
+  
+  .login-input-group {
+    position: relative;
+  }
+  
+  .farmer-login-btn {
+    width: 100%;
+    background-color: #007bff;
+    color: white;
+    padding: 10px;
+    border: none;
+    border-radius: 5px;
+  }
+  
+ 
