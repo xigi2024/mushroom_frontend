@@ -1,5 +1,6 @@
 import { Container, Row, Col, Form, Button } from "react-bootstrap";
 import { FaFacebook, FaTwitter, FaYoutube, FaInstagram } from "react-icons/fa";
+import { Link } from "react-router-dom";
 import logo2 from "../assets/logo2.png";
 
 function Footer() {
@@ -9,7 +10,9 @@ function Footer() {
         <Row>
           {/* Column 1 */}
           <Col md={3}>
-          <img src={logo2} alt="Mushroom Site" class="img-fluid" style={{width:"200px",height:"100px",objectFit:"contain",margin:"auto"}} />
+          <Link to="/">
+            <img src={logo2} alt="Mushroom Site" className="img-fluid" style={{width:"200px",height:"100px",objectFit:"contain",margin:"auto"}} />
+          </Link>
         
             <p>
               "Mushroom made our first import seamless and stress-free. Their

@@ -1,183 +1,291 @@
-import React, { useState } from 'react';
-import { Container, Row, Col, Card, Button, Table, Image } from 'react-bootstrap';
+// Cart.js
+import React, { useEffect } from 'react';
+import { Container, Row, Col, Card, Button, Table, Image, Spinner, Alert } from 'react-bootstrap';
+import { FaShoppingBag, FaSignInAlt, FaExclamationTriangle } from 'react-icons/fa';
+import { useCart } from '../../context/CartContext';
+import { useNavigate } from 'react-router-dom';
 
 const Cart = () => {
-  const [cartItems, setCartItems] = useState([
-    {
-      id: 1,
-      name: 'Button Mushroom Kit',
-      price: 280,
-      quantity: 2,
-      image: 'https://i.pinimg.com/1200x/2b/17/79/2b177957681d4d3e6c7294e31b8a4a21.jpg'
-    },
-    {
-      id: 2,
-      name: 'Premium Spawns',
-      price: 200,
-      quantity: 1,
-      image: 'https://via.placeholder.com/100x100'
+  const {
+    cart,
+    loading,
+    removeFromCart,
+    updateQuantity,
+    clearCart,
+    getTotalItems,
+    getTotalPrice,
+    fetchCart,
+    isAuthenticated
+  } = useCart();
+
+  const navigate = useNavigate();
+
+  // Fetch cart when component mounts or auth status changes
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchCart();
     }
-  ]);
+  }, [isAuthenticated, fetchCart]);
 
-  // 🔹 Increase quantity
-  const increaseQuantity = (id) => {
-    setCartItems(cartItems.map(item =>
-      item.id === id ? { ...item, quantity: item.quantity + 1 } : item
-    ));
+  // Remove debug logs after confirming fix works
+  // useEffect(() => {
+  //   console.log('Cart component - Current cart data:', cart);
+  //   console.log('Cart items:', cart?.items);
+  //   console.log('Total items:', getTotalItems());
+  //   console.log('Total price:', getTotalPrice());
+  // }, [cart]);
+
+  if (loading) {
+    return (
+      <Container className="my-5 text-center">
+        <Spinner animation="border" variant="success" />
+        <p className="mt-2">Loading your cart...</p>
+      </Container>
+    );
+  }
+
+  // Check if cart exists and has items
+  if (!cart || !cart.items || cart.items.length === 0) {
+    return (
+      <Container className="my-5">
+        <Card className="text-center p-5">
+          <div className="mb-4">
+            <FaShoppingBag size={48} className="text-muted mb-3" />
+            <h4>Your cart is empty</h4>
+            <p className="text-muted mb-4">Add some delicious mushrooms to get started</p>
+            {!isAuthenticated && (
+              <Alert variant="info" className="mb-4">
+                <FaExclamationTriangle className="me-2" />
+                Login to view your saved cart items
+              </Alert>
+            )}
+          </div>
+          <div className="d-flex justify-content-center gap-3">
+            {!isAuthenticated && (
+              <Button 
+                onClick={() => navigate('/login', { state: { from: '/cart' } })}
+                className="d-flex align-items-center justify-content-center button"
+                style={{ minWidth: '150px' }}
+              >
+                <FaSignInAlt className="me-2" /> Login
+              </Button>
+            )}
+            <Button 
+              variant="outline-secondary"
+              onClick={() => navigate('/products')}
+              className="d-flex align-items-center justify-content-center"
+              style={{ minWidth: '150px' }}
+            >
+              <FaShoppingBag className="me-2" /> Continue Shopping
+            </Button>
+          </div>
+        </Card>
+      </Container>
+    );
+  }
+
+  const handleQuantityUpdate = (itemId, newQuantity) => {
+    if (newQuantity < 1) return;
+    updateQuantity(itemId, newQuantity);
   };
 
-  // 🔹 Decrease quantity (min 1)
-  const decreaseQuantity = (id) => {
-    setCartItems(cartItems.map(item =>
-      item.id === id && item.quantity > 1
-        ? { ...item, quantity: item.quantity - 1 }
-        : item
-    ));
+  const handleRemoveItem = (itemId) => {
+    if (window.confirm('Are you sure you want to remove this item?')) {
+      removeFromCart(itemId);
+    }
   };
 
-  // 🔹 Remove item
-  const removeItem = (id) => {
-    setCartItems(cartItems.filter(item => item.id !== id));
+  const handleClearCart = () => {
+    if (window.confirm('Are you sure you want to clear your entire cart?')) {
+      clearCart();
+    }
   };
 
-  // 🔹 Clear cart
-  const clearCart = () => {
-    setCartItems([]);
+  const calculateItemTotal = (item) => {
+    const price = parseFloat(item.price || item.product?.price || 0);
+    const quantity = item.qty || 0;
+    return (price * quantity).toFixed(2);
   };
 
-  // 🔹 Get totals
-  const getTotalPrice = () => {
-    return cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
-  };
-
-  const getTotalItems = () => {
-    return cartItems.reduce((total, item) => total + item.quantity, 0);
-  };
+  const subtotal = getTotalPrice();
+  const total = subtotal; // Total is same as subtotal (no tax)
 
   return (
     <Container className="my-5">
-      <h2 className="text-center mb-4">Shopping Cart</h2>
+      <div className="d-flex justify-content-between align-items-center mb-4">
+        <h2>Shopping Cart</h2>
+        <div className="text-muted">
+          {getTotalItems()} {getTotalItems() === 1 ? 'item' : 'items'}
+        </div>
+      </div>
 
-      {cartItems.length === 0 ? (
-        <Card className="text-center p-5">
-          <h4>Your cart is empty</h4>
-          <p className="text-muted mb-4">Add some products to get started</p>
-          <Button variant="success" href="/products">
-            Continue Shopping
-          </Button>
-        </Card>
-      ) : (
-        <Row>
-          <Col md={8}>
-            <Card className="p-4 mb-4">
-              <Table responsive>
-                <thead>
-                  <tr>
-                    <th>Product</th>
-                    <th>Price</th>
-                    <th>Quantity</th>
-                    <th>Total</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {cartItems.map(item => (
-                    <tr key={item.id}>
+      <Row>
+        {/* Cart Items */}
+        <Col md={8}>
+          <Card className="p-4 mb-4">
+            <Table responsive className="mb-0">
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>Price</th>
+                  <th>Quantity</th>
+                  <th>Total</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {cart.items.map((item) => {
+                  const product = item.product || {};
+                  const price = parseFloat(item.price || product.price || 0);
+                  const quantity = item.qty || 0;
+                  
+                  return (
+                    <tr key={item.id || `${product.id}_${Date.now()}`}>
                       <td>
                         <div className="d-flex align-items-center">
-                          <Image
-                            src={item.image}
-                            width="60"
-                            height="60"
-                            className="me-3"
-                            style={{ objectFit: 'cover' }}
-                          />
-                          <span>{item.name}</span>
+                          <div 
+                            onClick={() => navigate(`/product/${product.id}`)}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <Image
+                              src={product.image ? `http://localhost:8000${product.image}` : (product.images?.[0]?.image ? `http://localhost:8000${product.images[0].image}` : 'https://via.placeholder.com/100x100/28a745/ffffff?text=Product')}
+                              width="60"
+                              height="60"
+                              className="me-3 rounded"
+                              style={{ objectFit: 'cover' }}
+                              onError={(e) => {
+                                e.target.src = 'https://via.placeholder.com/100x100/28a745/ffffff?text=Product';
+                              }}
+                            />
+                          </div>
+                          <div>
+                            <div 
+                              className="fw-semibold" 
+                              onClick={() => navigate(`/product/${product.id}`)}
+                              style={{ cursor: 'pointer' }}
+                            >
+                              {product.name || 'Unknown Product'}
+                            </div>
+                            {product.size && (
+                              <small className="text-muted">Size: {product.size}</small>
+                            )}
+                          </div>
                         </div>
                       </td>
-                      <td>₹{item.price.toFixed(2)}</td>
-                      <td>
+                      <td className="align-middle">
+                        <strong>₹{price.toFixed(2)}</strong>
+                      </td>
+                      <td className="align-middle">
                         <div className="d-flex align-items-center">
                           <Button
                             variant="outline-secondary"
                             size="sm"
-                            onClick={() => decreaseQuantity(item.id)}
+                            onClick={() => handleQuantityUpdate(item.id, quantity - 1)}
+                            disabled={quantity <= 1}
                           >
                             -
                           </Button>
-                          <span className="mx-3">{item.quantity}</span>
+                          <span className="mx-3 fw-semibold">{quantity}</span>
                           <Button
                             variant="outline-secondary"
                             size="sm"
-                            onClick={() => increaseQuantity(item.id)}
+                            onClick={() => handleQuantityUpdate(item.id, quantity + 1)}
                           >
                             +
                           </Button>
                         </div>
                       </td>
-                      <td>₹{(item.price * item.quantity).toFixed(2)}</td>
-                      <td>
+                      <td className="align-middle">
+                        <strong>₹{calculateItemTotal(item)}</strong>
+                      </td>
+                      <td className="align-middle">
                         <Button
                           variant="outline-danger"
                           size="sm"
-                          onClick={() => removeItem(item.id)}
+                          onClick={() => handleRemoveItem(item.id)}
                         >
                           Remove
                         </Button>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </Table>
-            </Card>
+                  );
+                })}
+              </tbody>
+            </Table>
+          </Card>
 
-            <div className="d-flex justify-content-between">
-              <Button variant="outline-secondary" href="/products">
-                Continue Shopping
-              </Button>
-              <Button variant="outline-danger" onClick={clearCart}>
-                Clear Cart
-              </Button>
+          <div className="d-flex justify-content-between">
+            <Button 
+              variant="outline-secondary" 
+              onClick={() => navigate('/products')}
+            >
+              Continue Shopping
+            </Button>
+            <Button 
+              variant="outline-danger" 
+              onClick={handleClearCart}
+            >
+              Clear Cart
+            </Button>
+          </div>
+        </Col>
+
+        {/* Order Summary */}
+        <Col md={4}>
+          <Card className="p-4">
+            <h4 className="mb-4">Order Summary</h4>
+
+            <div className="d-flex justify-content-between mb-2">
+              <span>Subtotal ({getTotalItems()} items)</span>
+              <span>₹{subtotal.toFixed(2)}</span>
             </div>
-          </Col>
 
-          <Col md={4}>
-            <Card className="p-4">
-              <h4 className="mb-4">Order Summary</h4>
+            <div className="d-flex justify-content-between fw-bold fs-5">
+              <span>Total:</span>
+              <span>₹{total.toFixed(2)}</span>
+            </div>
 
-              <div className="d-flex justify-content-between mb-2">
-                <span>Items ({getTotalItems()})</span>
-                <span>₹{getTotalPrice().toFixed(2)}</span>
+            <Button 
+              className="w-100 mb-3 button" 
+              onClick={() => navigate('/checkout')}
+            >
+              Proceed to Checkout
+            </Button>
+
+            <Button 
+              className="w-100 border text-center py-2 rounded cursor-pointer"
+              onClick={() => navigate('/products')}
+            >
+              Continue Shopping
+            </Button>
+
+            {/* Login Prompt for Guest Users */}
+            {!isAuthenticated && (
+              <div className="mt-4">
+                <Alert variant="warning" className="mb-3">
+                  <div className="d-flex align-items-center">
+                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                    <div>
+                      <h6 className="alert-heading mb-1">Guest User</h6>
+                      <p className="mb-0">Please login to save your cart and access it from any device.</p>
+                    </div>
+                  </div>
+                </Alert>
+                <Button 
+                  className="w-100 mb-3 button"
+                  onClick={() => navigate('/login', { state: { from: '/cart' } })}
+                >
+                  <i className="bi bi-box-arrow-in-right me-2"></i>
+                  Login to Save Your Cart
+                </Button>
+                <div className="text-center text-muted small">
+                  Your cart will be saved temporarily in this browser.
+                </div>
               </div>
-
-              <div className="d-flex justify-content-between mb-2">
-                <span>Shipping</span>
-                <span className="text-success">FREE</span>
-              </div>
-
-              <div className="d-flex justify-content-between mb-2">
-                <span>Tax</span>
-                <span>₹{(getTotalPrice() * 0.09).toFixed(2)}</span>
-              </div>
-
-              <hr />
-
-              <div className="d-flex justify-content-between mb-4 fw-bold fs-5">
-                <span>Total</span>
-                <span>₹{(getTotalPrice() * 1.09).toFixed(2)}</span>
-              </div>
-
-              <Button variant="success" size="lg" className="w-100 mb-3" href="/checkout">
-                Proceed to Checkout
-              </Button>
-
-              <Button variant="outline-primary" className="w-100">
-                Continue Shopping
-              </Button>
-            </Card>
-          </Col>
-        </Row>
-      )}
+            )}
+          </Card>
+        </Col>
+      </Row>
     </Container>
   );
 };

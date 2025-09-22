@@ -28,7 +28,10 @@ import RoomDetail from './components/pages/RoomDetail'
 import AddRoom from './components/pages/AddRoom'
 
 import { AuthProvider } from './context/AuthContext';
+import { CartProvider } from './context/CartContext';
 import ProtectedRoute from './components/ProtectedRoute'; // Import ProtectedRoute
+
+import WhatsAppButton from './components/WhatsAppButton';
 
 function AppContent() {
   const location = useLocation();
@@ -61,6 +64,7 @@ function AppContent() {
   return (
     <div>
       {!hideHeader && <Header />}
+      <WhatsAppButton />
       <ScrollToTop />
       <Routes>
         <Route path="/" element={<Home />} />
@@ -219,7 +223,9 @@ function App() {
   return (
     <AuthProvider> {/* Wrap the entire app with AuthProvider */}
       <Router>
-        <AppContent />
+        <CartProvider>
+          <AppContent />
+        </CartProvider>
       </Router>
     </AuthProvider>
   )

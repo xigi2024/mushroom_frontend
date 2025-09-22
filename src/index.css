@@ -56,3 +56,8 @@ p, li, ul, .nav-link, .btn, a,
 .section{
     padding: 90px 0;
 }
+.btn-success{
+    background-color: #198754  !important;
+    border-color: #198754 !important;
+    color: white !important;
+}

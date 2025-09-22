@@ -205,7 +205,7 @@ const About = () => {
           
           <div className="row" style={{marginTop:"70px"}}>
             <div className="col-lg-3 col-md-6 mb-4">
-              <div className="text-left">
+              <div className="text-center">
                 <div className="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{ width: '80px', height: '80px' }}>
                 <img src="../src/assets/icon1.png" className='img-size mb-3' alt="Fresh & Organic"/>
                 </div>
@@ -217,7 +217,7 @@ const About = () => {
             </div>
             
             <div className="col-lg-3 col-md-6 mb-4">
-              <div className="text-left">
+              <div className="text-center">
                 <div className="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{ width: '80px', height: '80px' }}>
                 <img src="../src/assets/icon2.png" className='img-size mb-3' alt="Fresh & Organic"/>
                 </div>
@@ -229,7 +229,7 @@ const About = () => {
             </div>
             
             <div className="col-lg-3 col-md-6 mb-4">
-              <div className="text-left">
+              <div className="text-center">
                 <div className="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{ width: '80px', height: '80px' }}>
                 <img src="../src/assets/icon3.png" className='img-size mb-3' alt="Fresh & Organic"/>
                 </div>
@@ -241,7 +241,7 @@ const About = () => {
             </div>
             
             <div className="col-lg-3 col-md-6 mb-4">
-              <div className="text-left">
+              <div className="text-center">
                 <div className="bg-light rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style={{ width: '80px', height: '80px' }}>
                 <img src="../src/assets/icon4.png" className='img-size mb-3' alt="Fresh & Organic"/>
                 </div>
@@ -261,8 +261,7 @@ const About = () => {
         <div className="text-center mb-5">
           <h2 className="h1 color mb-3">Discover Frequently Asked Questions</h2>
           <p className="text-muted">
-            Lorem ipsum dolor sit amet consectetur, et ullam consectetur, et perferendis 
-            consequuntur, et ullam consectetur.
+          Find quick answers before you reach out to us
           </p>
         </div>
 
@@ -310,7 +309,6 @@ const About = () => {
         </div>
       </div>
     </section>
-
 
       {/* middle cta section */}
       <Container className="my-5" style={{ backgroundColor: '#f1fff0', padding: '60px 0' }}>

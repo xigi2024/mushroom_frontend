@@ -203,13 +203,19 @@ const Products = () => {
       {/* CTA Section */}
       <Container className="cta-section my-5">
         <Row className="align-items-center">
-          <Col md={8} className="text-center text-md-start">
+          <Col md={8} className="text-center">
             <img src="../src/assets/leaf.png" className="leaf mb-3" alt="Leaf icon" />
             <h2 className="cta-title">Grow with Confidence</h2>
             <p className="cta-text">
-              Our premium mushroom products are carefully cultivated to ensure the highest quality and yield.
-            </p>
-            <Button className="cta-button mt-3">We're Here to Help</Button>
+            Our premium mushroom products are carefully cultivated to ensure 
+  the highest quality and yield. We help you achieve healthy growth and 
+  consistent results every season.            </p>
+            <Button 
+              className="button mt-3"
+              onClick={() => navigate('/contact')}
+            >
+              We're Here to Help
+            </Button>
           </Col>
           <Col md={4} className="text-center">
             <img

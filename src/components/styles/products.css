@@ -106,6 +106,8 @@
     color: #5a5a5a;
     font-size: 1.1rem;
     margin-bottom: 1.5rem;
+    width: 90%;
+    margin: 0 auto;
   }
   
   .cta-button {

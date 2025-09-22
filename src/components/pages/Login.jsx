@@ -55,24 +55,71 @@ const Login = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-
+  
+    console.log('🔑 Starting login submission...');
     setIsSubmitting(true);
 
     try {
+      // Check if there are guest cart items
+      const guestCartData = localStorage.getItem('guest_cart');
+      let hasGuestItems = false;
+      let itemCount = 0;
+      
+      if (guestCartData) {
+        try {
+          const guestCart = JSON.parse(guestCartData);
+          hasGuestItems = guestCart?.items?.length > 0;
+          itemCount = guestCart?.items?.length || 0;
+        } catch (e) {
+          console.error('Error parsing guest cart:', e);
+        }
+      }
+
+      console.log('🛒 Has guest items to sync:', hasGuestItems, 'Count:', itemCount);
+
+      // Attempt login
       const result = await login({
         email: formData.email,
         password: formData.password,
       });
 
-      if (result.success) {
-        toast.success("Login successful!");
-        setTimeout(() => navigate("/user-dashboard"), 1000);
+      console.log('📝 Login result:', result);
+
+      if (result?.success) {
+        console.log('✅ Login successful');
+        
+        // Show success message
+        toast.success(result.message || "Login successful!");
+
+        // Handle cart sync result
+        if (result.cartSync) {
+          if (result.cartSync.success && result.cartSync.itemCount > 0) {
+            toast.success(result.cartSync.message || `${result.cartSync.itemCount} items transferred to your cart!`);
+          } else if (!result.cartSync.success) {
+            toast.warning("Login successful, but failed to transfer cart items. Your items are still saved locally.");
+          }
+        }
+
+        // Navigate to home page after a short delay
+        setTimeout(() => {
+          console.log('🏠 Redirecting to home page');
+          navigate('/', { replace: true });
+        }, hasGuestItems ? 2000 : 1000); // Longer delay if there were items to sync
+
       } else {
-        toast.error(result.message || "Invalid credentials");
+        // Show specific error message from the server
+        const errorMessage = result?.message || 'Login failed. Please check your credentials.';
+        toast.error(errorMessage);
+        
+        // Clear password field on error for security
+        setFormData(prev => ({
+          ...prev,
+          password: ''
+        }));
       }
     } catch (error) {
-      console.error(error);
-      toast.error("Server error during login");
+      console.error('Login error:', error);
+      toast.error(error.message || "An error occurred during login. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

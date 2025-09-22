@@ -1,7 +1,10 @@
 import React, { Fragment, useState, useEffect } from 'react';
-import { Container, Navbar, Nav, Row, Col, Card, Button, Carousel, Form } from 'react-bootstrap';
+import { Container, Navbar, Nav, Row, Col, Card, Button, Carousel, Form, Spinner, Alert , Modal } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useNavigate, Link } from "react-router-dom";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { useCart } from "../../context/CartContext";
 import "../styles/home.css"
 import img1 from "../../assets/img1.png";
 import img2 from "../../assets/img2.png";
@@ -144,45 +147,79 @@ const PromisesSection = () => {
 };
 
 const FavouriteProducts = () => {
-  const products = [
-    {
-      title: "Organic Mushroom Kit",
-      img: "https://i.pinimg.com/736x/c8/49/c7/c849c768b69aad92c49f990a1965ac8b.jpg",
-      size: "200 mm",
-      serves: "Serves 2",
-    },
-    {
-      title: "Premium Spawns",
-      img: "https://i.pinimg.com/736x/c8/49/c7/c849c768b69aad92c49f990a1965ac8b.jpg",
-      size: "200 mm",
-      serves: "Serves 2",
-    },
-    {
-      title: "Grow Bags",
-      img: "https://i.pinimg.com/736x/8f/7d/6b/8f7d6bcb072f0ff7ab49af9a528df70e.jpg",
-      size: "200 mm",
-      serves: "Serves 2",
-    },
-    {
-      title: "IoT Kit",
-      img: "https://i.pinimg.com/736x/8f/7d/6b/8f7d6bcb072f0ff7ab49af9a528df70e.jpg",
-      size: "200 mm",
-      serves: "Serves 2",
-    },
-    {
-      title: "Extra Product 1",
-      img: "https://i.pinimg.com/736x/c8/49/c7/c849c768b69aad92c49f990a1965ac8b.jpg",
-      size: "200 mm",
-      serves: "Serves 2",
-    },
-    {
-      title: "Extra Product 2",
-      img: "https://via.placeholder.com/200x150.png?text=Extra+2",
-      size: "200 mm",
-      serves: "Serves 2",
-    },
-  ];
-  // Chunk logic with looping
+  const { addToCart, isAuthenticated } = useCart();
+  const navigate = useNavigate();
+  const [addingToCart, setAddingToCart] = useState(null);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Modal state for guest after add-to-cart
+  const [showGuestModal, setShowGuestModal] = useState(false);
+  const [modalProduct, setModalProduct] = useState(null);
+
+  // Fetch products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch("http://127.0.0.1:8000/api/products/");
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch products");
+        }
+
+        const productsData = await response.json();
+        setProducts(productsData);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+
+  const handleAddToCart = async (product) => {
+    console.log(
+      "🛒 Adding product to cart:",
+      product.name,
+      "User authenticated:",
+      isAuthenticated
+    );
+
+    setAddingToCart(product.id);
+
+    try {
+      const result = await addToCart(product);
+
+      // result shape may vary; keep original check
+      if (result?.success) {
+        // always show success toast
+        toast.success(`${product.name} added to cart!`);
+
+        if (!isAuthenticated) {
+          // for guest users show modal (ask to login/register)
+          setModalProduct(product);
+          setShowGuestModal(true);
+        }
+      } else {
+        toast.error("Failed to add product to cart. Please try again.");
+      }
+    } catch (err) {
+      console.error("Error adding to cart:", err);
+      toast.error("Failed to add product to cart. Please try again.");
+    } finally {
+      setAddingToCart(null);
+    }
+  };
+
+  const handleViewDetails = (product) => {
+    navigate(`/product/${product.category || 1}/${product.id}`);
+  };
+
+  // Chunk logic with looping (keeps original behavior)
   const chunkProducts = (arr, size) => {
     let chunks = [];
     for (let i = 0; i < arr.length; i += size) {
@@ -198,75 +235,171 @@ const FavouriteProducts = () => {
 
   const productChunks = chunkProducts(products, 4);
 
-  return (
-    <section style={{ backgroundColor: "#f1fff0" }} className="py-5 my-5">
-      <Container>
-        {/* Header Section */}
-        <Row className="align-items-center carousel">
-          {/* Left Content */}
-          <Col lg={6}>
-            <h2 className="fw-bold color ">
-              Don’t Miss These <br /> Favourite
-            </h2>
-            <Button className="mt-3 button" >
-              View More Products
-            </Button>
-          </Col>
-
-          {/* Right Image */}
-          <Col
-            lg={6}
-            className="d-flex justify-content-end align-items-end text-end"
+  if (loading) {
+    return (
+      <section style={{ backgroundColor: "#f1fff0" }} className="py-5 my-5">
+        <Container>
+          <div
+            className="d-flex justify-content-center align-items-center"
+            style={{ height: "300px" }}
           >
-            <img
-              src="../src/assets/prod1.png"
-              alt="Mushroom"
-              className="w-75"
-              style={{ height: "250px", objectFit: "contain" }}
-            />
-          </Col>
-        </Row>
+            <Spinner animation="border" role="status" variant="success">
+              <span className="visually-hidden">Loading...</span>
+            </Spinner>
+          </div>
+        </Container>
+      </section>
+    );
+  }
 
-        {/* Carousel Section */}
-        <Carousel interval={3000} controls={false} indicators={true}>
-          {productChunks.map((chunk, index) => (
-            <Carousel.Item key={index}>
-              <Row className="justify-content-center" style={{ paddingLeft: "130px" }}>
-                {chunk.map((product, idx) => (
-                  <Col key={idx} md={3} sm={6} className="mb-4">
-                    <Card className="h-100 text-center shadow-sm border-0 rounded-4">
-                      <Card.Img
-                        variant="top"
-                        src={product.img}
-                        alt={product.title}
-                        style={{ height: "200px", objectFit: "cover" }}
-                      />
-                      <Card.Body>
-                        <Card.Title className="fw-semibold">
-                          {product.title}
-                        </Card.Title>
-                        <div className="d-flex justify-content-center gap-2 mb-3">
-                          <span className="badge bg-light text-dark border">
-                            {product.size}
-                          </span>
-                          <span className="badge bg-light text-dark border">
-                            {product.serves}
-                          </span>
-                        </div>
-                        <Button className="w-100 mt-2 button">
-                          Add to Cart
-                        </Button>
-                      </Card.Body>
-                    </Card>
-                  </Col>
-                ))}
-              </Row>
-            </Carousel.Item>
-          ))}
-        </Carousel>
+  if (error) {
+    return (
+      <section style={{ backgroundColor: "#f1fff0" }} className="py-5 my-5">
+        <Container>
+          <Alert variant="danger" className="text-center">
+            <Alert.Heading>Error Loading Products</Alert.Heading>
+            <p>{error}</p>
+            <Button variant="outline-danger" onClick={() => window.location.reload()}>
+              Try Again
+            </Button>
+          </Alert>
+        </Container>
+      </section>
+    );
+  }
 
-      </Container>
-    </section>
+  if (products.length === 0) {
+    return (
+      <section style={{ backgroundColor: "#f1fff0" }} className="py-5 my-5">
+        <Container>
+          <div className="text-center py-5">
+            <h4>No products available</h4>
+            <p className="text-muted">Check back later for our latest products</p>
+          </div>
+        </Container>
+      </section>
+    );
+  }
+
+  return (
+    <>
+      <ToastContainer position="top-right" autoClose={3000} />
+
+      <section style={{ backgroundColor: "#f1fff0" }} className="py-5 my-5">
+        <Container>
+          <Row className="align-items-center carousel">
+            <Col lg={6}>
+              <h2 className="fw-bold color">
+                Don't Miss These <br /> Collection
+              </h2>
+              <Link to="/products" className="btn button mt-3">
+                View More Products
+              </Link>
+            </Col>
+
+            {/* Right Image */}
+            <Col lg={6} className="d-flex justify-content-end align-items-end text-end">
+              <img
+                src="../src/assets/prod1.png"
+                alt="Mushroom"
+                className="w-75"
+                style={{ height: "250px", objectFit: "contain" }}
+              />
+            </Col>
+          </Row>
+
+          {/* Carousel Section */}
+          <Carousel interval={3000} controls={false} indicators={true}>
+            {productChunks.map((chunk, index) => (
+              <Carousel.Item key={index}>
+                <Row className="justify-content-center" style={{ paddingLeft: "130px" }}>
+                  {chunk.map((product, idx) => (
+                    <Col key={`${index}-${idx}`} md={3} sm={6} className="mb-4">
+                      <Card className="h-100 text-center shadow-sm border-0 rounded-4">
+                        <Card.Img
+                          variant="top"
+                          src={
+                            product.image ||
+                            product.images?.[0]?.image ||
+                            "https://via.placeholder.com/300x200/28a745/ffffff?text=Mushroom"
+                          }
+                          alt={product.name}
+                          style={{ height: "200px", objectFit: "cover", cursor: "pointer" }}
+                          onClick={() => handleViewDetails(product)}
+                        />
+                        <Card.Body>
+                          <Card.Title
+                            className="fw-semibold"
+                            style={{ cursor: "pointer" }}
+                            onClick={() => handleViewDetails(product)}
+                          >
+                            {product.name}
+                          </Card.Title>
+
+                          <div className="d-flex justify-content-center gap-2 mb-3">
+                            {product.size && (
+                              <span className="badge bg-light text-dark border">{product.size}</span>
+                            )}
+                            {product.serves && (
+                              <span className="badge bg-light text-dark border">{product.serves}</span>
+                            )}
+                          </div>
+
+                          <p className="fw-bold text-success">₹{parseFloat(product.price).toFixed(2)}</p>
+
+                          <Button
+                            className="w-100 mt-2 button"
+                            onClick={() => handleAddToCart(product)}
+                            disabled={addingToCart === product.id}
+                          >
+                            {addingToCart === product.id ? "Adding..." : "Add to Cart"}
+                          </Button>
+                        </Card.Body>
+                      </Card>
+                    </Col>
+                  ))}
+                </Row>
+              </Carousel.Item>
+            ))}
+          </Carousel>
+        </Container>
+      </section>
+
+      {/* Guest Modal (shown after guest adds product to cart) */}
+      <Modal
+        show={showGuestModal}
+        onHide={() => setShowGuestModal(false)}
+        centered
+        backdrop="static"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Item added to cart</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p style={{ marginBottom: 0 }}>
+            <strong>{modalProduct?.name}</strong> added to cart!
+          </p>
+          <p className="text-muted mt-2" style={{ fontSize: "0.95rem" }}>
+            Create an account to save your cart permanently. Would you like to
+            login/register now?
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowGuestModal(false)}>
+            Continue Shopping
+          </Button>
+          <Button
+            variant="success"
+            onClick={() => {
+              setShowGuestModal(false);
+              navigate("/login");
+            }}
+          >
+            Login / Register
+          </Button>
+        </Modal.Footer>
+      </Modal>
+    </>
   );
 };
 
@@ -330,7 +463,7 @@ const ProductSection = () => {
               {[...Array(2)].map((_, i) => (
                 <Fragment key={i}>
                   {products.map((product, idx) => (
-                    <div className="marquee-item" key={idx} style={{height:"400px"}}>
+                    <div className="marquee-item" key={idx} style={{height:"330px"}}>
                       <Card className="custom-card h-100 shadow-sm border-0">
                         <div className="card-image-container">
                           <Card.Img
@@ -366,7 +499,7 @@ const HeroCarousel = () => {
   const carouselData = [
     {
       id: 1,
-      title: "Smart Farming. Fresh Mushrooms. Grown with Care & Technology.",
+      title: "Smart Farming.Grown with Care & Technology.",
       subtitle: "From IoT monitored farms to your doorstep - organic, fresh, and safe.",
       buttonText: "Shop Fresh Mushrooms",
       backgroundImage: "https://i.pinimg.com/1200x/e0/d9/7b/e0d97bcddd179d8aff92eb69eb17a0ac.jpg"
@@ -375,7 +508,7 @@ const HeroCarousel = () => {
       id: 2,
       title: "Premium Quality Mushrooms. Sustainably Grown.",
       subtitle: "Advanced cultivation techniques ensuring the highest quality organic mushrooms.",
-      buttonText: "Explore more",
+      buttonText: "Start Your Journey",
       backgroundImage: "https://i.pinimg.com/1200x/d0/ab/7d/d0ab7de881fafee37fed4bc1600a6510.jpg"
     },
     {
@@ -396,10 +529,12 @@ const HeroCarousel = () => {
   }, [carouselData.length]);
 
   const handleRedirect = (buttonText) => {
-    if (buttonText === 'Explore more') {
-      navigate("/about");
-    } else {
+    if (buttonText === "Shop Fresh Mushrooms") {
       navigate("/products");
+    } else if (buttonText === "Start Your Journey") {
+      navigate("/contact");
+    } else if (buttonText === "Learn More") {
+      navigate("/about");
     }
   };
 
@@ -426,15 +561,7 @@ const HeroCarousel = () => {
               <div className="container">
                 <div className="row">
                   <div className="col-lg-8 col-xl-7">
-                    <h1>
-                      {slide.title.split(".").map((part, i) => (
-                        <span key={i}>
-                          {part.trim()}
-                          {i < slide.title.split(".").length - 1 && "."}
-                          <br />
-                        </span>
-                      ))}
-                    </h1>
+                  <h1 className="mb-3 pb-0"> {slide.title} </h1>
                     <p className="subtitle">{slide.subtitle}</p>
                     <button
                       className="button cursor-pointer"
@@ -692,7 +819,7 @@ const Home = () => {
               src="../src/assets/mushroom.png"
               alt="Mushrooms"
               style={{ height: "200px", objectFit: 'cover' }}
-            />
+            /> 
           </Col>
         </Row>
       </Container>

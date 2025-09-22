@@ -133,3 +133,22 @@
     width: 75% !important; /* phone view */
   }
 }
+
+
+.badges {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+   
+    color: #fff;
+    border: 1px solid #ddd;
+    border-color: #0B8001;
+    background-color: #0B8001;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    font-size: 0.7rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }

@@ -54,10 +54,16 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [error, setError] = useState(null);
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
+  const [user, setUser] = useState(() => {
+    const storedUser = localStorage.getItem('user');
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
+  const [token, setToken] = useState(() => localStorage.getItem('access_token') || null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return !!localStorage.getItem('access_token');
+  });
 
   // 🟢 Load auth data from localStorage
   useEffect(() => {
@@ -67,59 +73,169 @@ export const AuthProvider = ({ children }) => {
     if (storedToken && storedUser) {
       setToken(storedToken);
       setUser(JSON.parse(storedUser));
+      setIsAuthenticated(true);
       axios.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
     }
     setLoading(false);
   }, []);
 
-  // 🟢 Login function
+  // 🟢 Login function with simplified cart sync
   const login = async ({ email, password }) => {
+    console.log('🔑 Attempting login with:', { email });
     try {
+      // Clear any existing tokens and data before login
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+      localStorage.removeItem("user");
+      
+      // Reset axios headers
+      delete axios.defaults.headers.common["Authorization"];
+      
       const response = await axios.post(
         "http://127.0.0.1:8000/api/login/",
-        { email, password },
-        { headers: { "Content-Type": "application/json" } }
+        { 
+          email: email.trim(), 
+          password: password 
+        },
+        { 
+          headers: { 
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          validateStatus: (status) => status < 500 // Don't throw on 4xx errors
+        }
       );
 
+      console.log('🔑 Login response status:', response.status);
+      console.log('🔑 Login response data:', response.data);
+      
       const data = response.data;
-
-      if (data.success && (data.access || data.token)) {
-        // Prefer JWT keys: access + refresh
-        const accessToken = data.access || data.token;
-        const refreshToken = data.refresh || data.refresh_token;
-
-        // 🟢 Construct user object from API
-        const userObj = {
-          first_name: data.user?.first_name || data.first_name || "",
-          last_name: data.user?.last_name || data.last_name || "",
-          username: data.user?.username || data.username || "",
-          role: data.user?.role || data.role || "user",
-          email: data.user?.email || email,
-        };
-
-        // Store in localStorage
+      
+      // Handle successful login (200 OK with access token)
+      if (response.status === 200 && data.access) {
+        const accessToken = data.access;
+        const refreshToken = data.refresh;
+        const userData = data.user || {};
+        
+        // Store tokens and user data
         localStorage.setItem("access_token", accessToken);
         if (refreshToken) {
           localStorage.setItem("refresh_token", refreshToken);
         }
-        localStorage.setItem("user", JSON.stringify(userObj));
-
-        // Update state
+        localStorage.setItem("user", JSON.stringify(userData));
+        
+        // Update state and set axios header
         setToken(accessToken);
-        setUser(userObj);
+        setUser(userData);
         setError(null);
-
-        // Set axios header
+        setIsAuthenticated(true);
         axios.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
-
-        return { success: true };
-      } else {
-        throw new Error(data.message || "Invalid login response");
+        
+        console.log('✅ Login successful for user:', userData.email);
+        
+        // 🛒 SYNC GUEST CART TO DATABASE
+        const syncResult = await syncGuestCartToDatabase(accessToken);
+        
+        return { 
+          success: true,
+          message: data.message || 'Login successful!',
+          user: userData,
+          cartSync: syncResult
+        };
+      } 
+      
+      // Handle error cases
+      let errorMessage = data.message || 'Login failed. Please try again.';
+      if (response.status === 401) {
+        errorMessage = data.message || 'Invalid email or password';
       }
+      
+      console.error('❌ Login failed:', errorMessage);
+      return {
+        success: false,
+        message: errorMessage,
+        status: response.status,
+        data: data
+      };
+      
     } catch (err) {
-      console.error("Login error:", err);
-      setError(err.message || "An error occurred during login");
-      return { success: false, message: err.message };
+      const errorMessage = err.response?.data?.message || err.message || 'An error occurred during login';
+      console.error("❌ Login error:", errorMessage, err);
+      setError(errorMessage);
+      return { 
+        success: false, 
+        message: errorMessage,
+        error: err
+      };
+    }
+  };
+
+  // 🛒 Sync guest cart to database after login
+  const syncGuestCartToDatabase = async (accessToken) => {
+    console.log('🔄 Starting guest cart sync...');
+    
+    const GUEST_CART_KEY = 'guest_cart';
+    const guestCartData = localStorage.getItem(GUEST_CART_KEY);
+    
+    if (!guestCartData) {
+      console.log('ℹ️ No guest cart found');
+      return { success: true, message: 'No items to sync' };
+    }
+    
+    try {
+      const guestCart = JSON.parse(guestCartData);
+      
+      if (!guestCart.items || guestCart.items.length === 0) {
+        console.log('ℹ️ Guest cart is empty');
+        localStorage.removeItem(GUEST_CART_KEY); // Clean up empty cart
+        return { success: true, message: 'No items to sync' };
+      }
+      
+      console.log(`📦 Found ${guestCart.items.length} items in guest cart:`, guestCart.items);
+      
+      // Prepare items for sync
+      const itemsToSync = guestCart.items.map(item => ({
+        product_id: item.product.id,
+        quantity: item.qty || 1
+      }));
+      
+      console.log('🚀 Syncing items to database:', itemsToSync);
+      
+      // Send sync request
+      const response = await axios.post(
+        'http://127.0.0.1:8000/api/cart/sync-guest-cart/',
+        { items: itemsToSync },
+        {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+      
+      if (response.status === 200) {
+        console.log('✅ Guest cart synced successfully');
+        // Clear guest cart after successful sync
+        localStorage.removeItem(GUEST_CART_KEY);
+        
+        // Dispatch custom event to notify CartContext
+        window.dispatchEvent(new CustomEvent('guestCartSynced', {
+          detail: { success: true, itemCount: itemsToSync.length }
+        }));
+        
+        return {
+          success: true,
+          message: `${itemsToSync.length} items transferred to your cart!`,
+          itemCount: itemsToSync.length
+        };
+      }
+    } catch (error) {
+      console.error('❌ Failed to sync guest cart:', error);
+      // Don't remove guest cart if sync failed
+      return {
+        success: false,
+        error: error.message || 'Failed to sync cart items'
+      };
     }
   };
 
@@ -128,9 +244,11 @@ export const AuthProvider = ({ children }) => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
+    localStorage.removeItem("guest_cart"); // Also clear guest cart on logout
 
     setToken(null);
     setUser(null);
+    setIsAuthenticated(false);
 
     delete axios.defaults.headers.common["Authorization"];
 
@@ -154,12 +272,20 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
+  // Update isAuthenticated whenever user or token changes
+  useEffect(() => {
+    const isAuth = !!(token && user);
+    if (isAuth !== isAuthenticated) {
+      setIsAuthenticated(isAuth);
+    }
+  }, [user, token, isAuthenticated]);
+
   const value = {
     user,
     token,
     login,
     logout,
-    isAuthenticated: !!user,
+    isAuthenticated,
     loading,
     error,
   };
