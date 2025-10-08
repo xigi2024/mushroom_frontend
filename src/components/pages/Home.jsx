@@ -419,7 +419,7 @@ const ProductSection = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const response = await axios.get("http://127.0.0.1:8000/api/category/");
+        const response = await axios.get("https://mycomatrix.in/api/category/");
         
         console.log("API Response:", response.data); // Debug log
         
