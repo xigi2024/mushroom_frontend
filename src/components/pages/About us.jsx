@@ -15,11 +15,11 @@ const MushroomInfo = () => {
           Why Our Mushrooms Stay Fresh & Pure
         </h2>
 
-        <Tab.Container defaultActiveKey="sensors">
+        <Tab.Container defaultActiveKey="sensors ">
           <Row>
             {/* Left Menu */}
             <Col md={3}>
-              <Nav variant="pills" className="flex-column">
+              <Nav variant="pills" className="flex-column mb-5">
                 <Nav.Item>
                   <Nav.Link eventKey="sensors" className="fs-5 fw-semibold">
                     IoT Sensors
@@ -51,7 +51,7 @@ const MushroomInfo = () => {
                         fluid
                         rounded
                         style={{height:"350px"}}
-                        className="w-100 object-fit-cover"
+                        className="w-100 object-fit-cover mb-5"
                       />
                     </Col>
                     <Col md={6}>
@@ -79,7 +79,7 @@ const MushroomInfo = () => {
                         fluid
                         rounded
                         style={{height:"350px"}}
-                        className="w-100 object-fit-cover"
+                        className="w-100 object-fit-cover mb-5"
                       />
                     </Col>
                     <Col md={6}>
@@ -105,7 +105,7 @@ const MushroomInfo = () => {
                         fluid
                         rounded
                         style={{height:"350px"}}
-                        className="w-100 object-fit-cover"
+                        className="w-100 object-fit-cover mb-5"
                       />
                     </Col>
                     <Col md={6}>
@@ -161,11 +161,11 @@ const About = () => {
       <section className=" my-5 section">
         <div className="container">
           <div className="row align-items-center">
-            <div className="col-lg-5">
+            <div className="col-lg-5 mb-5">
               <img 
                 src={aboutMainImage} 
                 alt="Mushroom growing facility" 
-                className="img-fluid rounded shadow w-100"style={{height:"450px"}}
+                className="img-fluid facility rounded shadow w-100"style={{height:"450px"}}
               />
             </div>
             <div className="col-lg-7 ps-lg-5">
@@ -310,27 +310,32 @@ const About = () => {
       </div>
     </section>
 
-      {/* middle cta section */}
-      <Container className="my-5" style={{ backgroundColor: '#f1fff0', padding: '60px 0' }}>
-        <Row className="align-items-center">
-          <Col md={8} className="text-center text-md-center">
-            <img src={leafImage} className='leaf mb-3' alt="Leaf icon"/> 
-            <h2 style={{ fontWeight: 'bold', color: '#006400' }}>
-              Grow with Confidence
-            </h2>
-            <Button as={Link} to="/contact" className="button mt-3">
-              We're Here to Help
-            </Button>
-          </Col>
-          <Col md={4} className="text-end">
-            <img
-              src={mushroomImage}
-              alt="Mushrooms"
-              style={{ height:"200px", objectFit: 'cover' }}
-            />
-          </Col>
-        </Row>
-      </Container>
+ {/* 🌿 Middle CTA Section */}
+<Container className="my-5 py-5" style={{ backgroundColor: '#f1fff0' }}>
+  <Row className="align-items-center text-center text-md-start">
+    {/* ✅ Text + Button Section */}
+    <Col md={8} className="mb-4 mb-md-0 text-center">
+      <img src={leafImage} className="leaf mb-3 object-fit-cover" alt="Leaf icon" style={{width:"60px",height:"60px"}}/>
+      <h2 style={{ fontWeight: 'bold', color: '#006400' }}>
+        Grow with Confidence
+      </h2>
+      <Button as={Link} to="/contact" className="button mt-3">
+        We're Here to Help
+      </Button>
+    </Col>
+
+    {/* ✅ Image Section */}
+    <Col md={4} className="text-center text-md-end">
+      <img
+        src={mushroomImage}
+        alt="Mushrooms"
+        className="img-fluid"
+        style={{ maxHeight: '220px', objectFit: 'contain' }}
+      />
+    </Col>
+  </Row>
+</Container>
+
     </div>
   );
 };

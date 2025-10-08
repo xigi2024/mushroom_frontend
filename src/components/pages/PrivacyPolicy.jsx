@@ -29,13 +29,12 @@ const PrivacyPolicy = () => {
     },
     alertBorder: {
       borderColor: customGreen,
-      backgroundColor: customGreen + "10" // Very light green background
+      backgroundColor: customGreen + "10" 
     },
     listItem: {
       borderLeftColor: customGreen
     }
   };
-
   return (
     <div className="container py-5 border rounded my-5">
       <div className="row justify-content-center">

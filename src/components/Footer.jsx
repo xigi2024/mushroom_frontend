@@ -68,7 +68,7 @@ function Footer() {
             {/* Email */}
             <p className="mb-1 d-flex align-items-center gap-2">
               <FaEnvelope size={16} color="rgb(50 51 50)" />
-              <span>support@mycomatrix.in</span>
+              <span>mycomatrix1@gmail.com</span>
             </p>
 
             {/* Phone */}

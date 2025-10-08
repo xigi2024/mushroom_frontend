@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import "../styles/contact.css";
-import { FaFacebookF, FaTwitter, FaYoutube, FaInstagram, FaMapMarkerAlt, FaPhoneAlt, FaEnvelope } from 'react-icons/fa';
+import { FaFacebookF, FaYoutube, FaInstagram, FaMapMarkerAlt, FaPhoneAlt, FaEnvelope } from 'react-icons/fa';
+import emailjs from '@emailjs/browser';
 
 const Contact = () => {
     const [formData, setFormData] = useState({
@@ -10,6 +11,14 @@ const Contact = () => {
         message: ''
     });
 
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [submitStatus, setSubmitStatus] = useState({ type: '', message: '' });
+
+    // EmailJS configuration
+    const EMAILJS_SERVICE_ID = 'service_inaxkqf'; // replace with your own
+    const EMAILJS_TEMPLATE_ID = 'template_2wnj26b'; // replace with your own
+    const EMAILJS_PUBLIC_KEY = 'MpRGXsPoOqv-UtGo0'; // replace with your own
+
     const handleInputChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({
@@ -18,10 +27,44 @@ const Contact = () => {
         }));
     };
 
-    const handleSubmit = () => {
-        console.log('Form submitted:', formData);
-        alert('Message sent successfully!');
-        setFormData({ name: '', phone: '', email: '', message: '' });
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setIsSubmitting(true);
+        setSubmitStatus({ type: '', message: '' });
+
+        try {
+            const templateParams = {
+                name: formData.name,
+                email: formData.email,
+                phone: formData.phone,
+                message: formData.message,
+                to_name: 'MyComatrix Team'
+            };
+
+            const result = await emailjs.send(
+                EMAILJS_SERVICE_ID,
+                EMAILJS_TEMPLATE_ID,
+                templateParams,
+                EMAILJS_PUBLIC_KEY
+            );
+
+            console.log('Email sent successfully:', result);
+
+            setSubmitStatus({
+                type: 'success',
+                message: 'Thank you! Your message has been sent successfully.'
+            });
+
+            setFormData({ name: '', phone: '', email: '', message: '' });
+        } catch (error) {
+            console.error('Failed to send email:', error);
+            setSubmitStatus({
+                type: 'danger',
+                message: 'Sorry, there was an error sending your message. Please try again.'
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -47,7 +90,7 @@ const Contact = () => {
                             <div className="h-100 p-5">
                                 <h3 className="color">Get In Touch</h3>
                                 <p className="text-muted mb-4">
-                                    Feel free to contact us via form or drop an enquiry. Fresh, local, and safe.
+                                    Feel free to contact us via form or drop an enquiry.
                                 </p>
 
                                 {/* Address */}
@@ -57,7 +100,7 @@ const Contact = () => {
                                     </div>
                                     <div className="ms-3">
                                         <h6 className="mb-1">Address</h6>
-                                        <p className="mb-0 text-muted">1/1/16 Ambalakar Street,<br />Vadugapatti,<br />Periyakulam-625 603<br />Theni, Tamil Nadu</p>
+                                        <p className="mb-0 text-muted">1/1/16 Ambalakar Street, Vadugapatti, Periyakulam-625 603, Theni, Tamil Nadu</p>
                                     </div>
                                 </div>
 
@@ -87,9 +130,9 @@ const Contact = () => {
 
                                 <div className="mt-5">
                                     <h6 className="mb-3">Follow Us</h6>
-                                    <div className="social-icons  d-flex gap-3">
-                                    <a href="https://www.youtube.com/@mycomatrix"><FaYoutube size={24} color="#FF0000" /></a>
-              <a href="https://www.instagram.com/myco_matrix_mushroom?utm_source=qr&igsh=YWE2cnNmd3NxNGhw"><FaInstagram size={24} color="#E1306C" /></a>
+                                    <div className="social-icons d-flex gap-3">
+                                        <a href="https://www.youtube.com/@mycomatrix"><FaYoutube size={24} color="#FF0000" /></a>
+                                        <a href="https://www.instagram.com/myco_matrix_mushroom"><FaInstagram size={24} color="#E1306C" /></a>
                                     </div>
                                 </div>
                             </div>
@@ -100,7 +143,13 @@ const Contact = () => {
                             <div className="contact-form h-100">
                                 <h3 className="color">Send a Message</h3>
 
-                                <div>
+                                {submitStatus.message && (
+                                    <div className={`alert alert-${submitStatus.type}`} role="alert">
+                                        {submitStatus.message}
+                                    </div>
+                                )}
+
+                                <form onSubmit={handleSubmit}>
                                     <div className="mb-3">
                                         <label htmlFor="name" className="form-label">Name</label>
                                         <input
@@ -111,6 +160,8 @@ const Contact = () => {
                                             value={formData.name}
                                             onChange={handleInputChange}
                                             placeholder="Your full name"
+                                            required
+                                            disabled={isSubmitting}
                                         />
                                     </div>
 
@@ -124,6 +175,7 @@ const Contact = () => {
                                             value={formData.phone}
                                             onChange={handleInputChange}
                                             placeholder="Your phone number"
+                                            disabled={isSubmitting}
                                         />
                                     </div>
 
@@ -137,6 +189,8 @@ const Contact = () => {
                                             value={formData.email}
                                             onChange={handleInputChange}
                                             placeholder="Your email address"
+                                            required
+                                            disabled={isSubmitting}
                                         />
                                     </div>
 
@@ -150,17 +204,19 @@ const Contact = () => {
                                             value={formData.message}
                                             onChange={handleInputChange}
                                             placeholder="Enter your message here..."
+                                            required
+                                            disabled={isSubmitting}
                                         ></textarea>
                                     </div>
 
                                     <button
-                                        type="button"
+                                        type="submit"
                                         className="button"
-                                        onClick={handleSubmit}
+                                        disabled={isSubmitting}
                                     >
-                                        Submit
+                                        {isSubmitting ? 'Sending...' : 'Submit'}
                                     </button>
-                                </div>
+                                </form>
                             </div>
                         </div>
                     </div>
@@ -170,7 +226,7 @@ const Contact = () => {
                         <div className="col-12">
                             <div className="map-container">
                                 <iframe
-                                    src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d31434.82269165303!2d77.48321278561961!3d9.987685134958271!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3b06cd54b1b8970d%3A0x9b5e8b3b7b0b0b0b!2sXigi%20Tech%20Pvt%20Ltd!5e0!3m2!1sen!2sin!4v1756549550207!5m2!1sen!2sin"
+                                    src="https://www.google.com/maps?q=1/1/16 Ambalakar Street, Vadugapatti, Periyakulam, Theni&output=embed"
                                     title="Location Map"
                                     width="100%"
                                     height="450"
