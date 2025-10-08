@@ -5,6 +5,10 @@ import Header from './components/Header'
 import Footer from './components/Footer'   
 import Register from './components/pages/Register'
 import Contact from './components/pages/Contact'  
+import ShippingPolicy from './components/pages/ShippingPolicy'
+import RefundPolicy from './components/pages/RefundPolicy'
+import PrivacyPolicy from './components/pages/PrivacyPolicy'
+import TermsConditions from './components/pages/TermsConditions'  
 import About from './components/pages/About us'
 import Products from './components/pages/Products'
 import ViewProduct from './components/pages/ViewProduct'
@@ -60,7 +64,6 @@ function AppContent() {
   // Always show sidebar on all pages
   const showSidebar = true;
 
-
   return (
     <div>
       {!hideHeader && <Header />}
@@ -74,6 +77,10 @@ function AppContent() {
         <Route path="/products" element={<Products />} />
         <Route path="/products/:id" element={<ViewProduct />} />
         <Route path="/product/:id/:subId" element={<ProductDetail />} />
+        <Route path="/shipping-policy" element={<ShippingPolicy />} />
+        <Route path="/refund-policy" element={<RefundPolicy />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-conditions" element={<TermsConditions />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password/:token" element={<ResetPassword />} />

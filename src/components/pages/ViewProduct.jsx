@@ -20,7 +20,7 @@ const ViewProduct = () => {
         setLoading(true);
         
         // Fetch all categories and find the one with matching ID
-        const categoryResponse = await fetch('http://127.0.0.1:8000/api/category/');
+        const categoryResponse = await fetch('https://mycomatrix.in/api/category/');
         if (!categoryResponse.ok) {
           throw new Error('Failed to fetch categories');
         }
@@ -34,7 +34,7 @@ const ViewProduct = () => {
         setCategory(foundCategory);
         
         // Fetch products for this category
-        const productsResponse = await fetch('http://127.0.0.1:8000/api/products/');
+        const productsResponse = await fetch('https://mycomatrix.in/api/products/');
         if (!productsResponse.ok) {
           throw new Error('Failed to fetch products');
         }
@@ -331,7 +331,7 @@ const ViewProduct = () => {
       </Container>
 
       {/* Add some custom CSS for better filter alignment */}
-      <style jsx>{`
+      <style jsx="true">{`
         .breadcrumb {
           background: none;
           padding: 0.5rem 0;

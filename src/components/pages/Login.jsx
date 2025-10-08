@@ -7,6 +7,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { Row, Col, Container } from "react-bootstrap";
 import "../styles/login.css";
 import { useAuth } from "../../context/AuthContext";
+import mushroomImg from "../../assets/mushoom-img.jpg";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -132,13 +133,13 @@ const Login = () => {
       <Row className="login-card shadow p-0">
         {/* Left Side */}
         <Col md={6} className="login-left">
-          <img
-            src="https://i.pinimg.com/736x/c8/49/c7/c849c768b69aad92c49f990a1965ac8b.jpg"
-            alt="Author"
-            className="img-fluid mb-3"
-            style={{ maxHeight: "500px" }}
-          />
-        </Col>
+  <img
+    src={mushroomImg}
+    alt="Mushroom"
+    className="img-fluid mb-3"
+    style={{ maxHeight: "500px" }}
+  />
+</Col>
 
         {/* Right Side */}
         <Col md={6} className="login-right p-4">

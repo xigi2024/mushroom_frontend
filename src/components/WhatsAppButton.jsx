@@ -6,7 +6,7 @@ const WhatsAppButton = () => {
   const location = useLocation();
   const [isMobileOrTab, setIsMobileOrTab] = useState(false);
 
-  const phoneNumber = '919791004582'; // Replace with your WhatsApp number
+  const phoneNumber = '919884248531'; // Replace with your WhatsApp number
   const message = 'Hello, I have a question about...';
 
   const hideOnRoutes = ["/login", "/register"];

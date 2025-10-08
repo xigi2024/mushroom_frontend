@@ -30,7 +30,8 @@ p, li, ul, .nav-link, .btn, a,
     background-color: #0B8001;
     color: white;
     border-radius: 5px;
-    padding: 10px 20px;
+    padding: 6px 15px;
+    font-size: 16px;
     border: 1px solid transparent; /* ✅ transparent border */
     cursor: pointer;
     transition: background-color 0.3s ease, color 0.3s ease, border 0.3s ease;

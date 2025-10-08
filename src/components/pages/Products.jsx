@@ -16,7 +16,7 @@ const Products = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch('http://127.0.0.1:8000/api/category/');
+        const response = await fetch('https://mycomatrix.in/api/category/');
         if (!response.ok) {
           throw new Error('Failed to fetch categories');
         }
@@ -53,7 +53,7 @@ const Products = () => {
     }
     
     if (category.image) {
-      const baseUrl = 'http://127.0.0.1:8000';
+      const baseUrl = 'https://mycomatrix.in';
       const imagePath = category.image.startsWith('/') ? category.image : `/${category.image}`;
       return `${baseUrl}${imagePath}`;
     }
@@ -88,7 +88,6 @@ const Products = () => {
       </div>
     );
   }
-
   return (
     <div className="products-container">
       {/* Hero Section */}
@@ -110,7 +109,6 @@ const Products = () => {
           </p>
         </div>
       </div>
-
       {/* Products Section */}
       <section className="products-section">
         <Container>
@@ -126,14 +124,16 @@ const Products = () => {
               </li>
             </ol>
           </nav>
-          
           <h2 className="section-title text-center fw-bold mb-5">Our Mushroom Growing Solutions</h2>
-          
           {categories.length > 0 ? (
             <Row className="g-4">
               {categories.map((category) => (
                 <Col key={category.id} xs={12} sm={6} lg={4} xl={3}>
-                  <Card className="category-card h-100 border-0 shadow-sm">
+                  <Card 
+                    className="category-card h-100 border-0 shadow-sm"
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => handleViewProduct(category.id)}
+                  >
                     <div className="card-image-container position-relative">
                       {!imageLoadErrors[category.id] && !loadedImages[category.id] && (
                         <div 
@@ -153,7 +153,7 @@ const Products = () => {
                           setLoadedImages((prev) => ({
                             ...prev,
                             [category.id]: true
-                          }));
+                           }));
                           e.target.style.opacity = 1;
                         }}
                         onError={() => handleImageError(category.id)}
@@ -176,12 +176,18 @@ const Products = () => {
                           {category.description}
                         </Card.Text>
                       )}
-                      <div className="mt-auto d-flex justify-content-between align-items-center">
+                      <div 
+                        className="mt-auto d-flex justify-content-between align-items-center"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <span className="badge bg-light text-dark">View Products</span>
                         <Button 
                           className="button"
                           size="sm"
-                          onClick={() => handleViewProduct(category.id)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewProduct(category.id);
+                          }}
                         >
                           View All
                         </Button>

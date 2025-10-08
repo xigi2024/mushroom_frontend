@@ -78,11 +78,20 @@ const Header = () => {
           {/* Desktop Navigation */}
           <div className="d-none d-lg-flex align-items-center w-100 justify-content-between">
             <Nav className="mx-auto fw-semibold" style={{ fontSize: "18px" }}>
-              {navLinks.map((link) => (
-                <Nav.Link key={link.path} as={Link} to={link.path} className="mx-2 text-dark">
-                  {link.label}
-                </Nav.Link>
-              ))}
+              {navLinks.map((link) => {
+                const isActive = window.location.pathname === link.path || 
+                               (link.path !== '/' && window.location.pathname.startsWith(link.path));
+                return (
+                  <Nav.Link 
+                    key={link.path} 
+                    as={Link} 
+                    to={link.path} 
+                    className={`mx-2 text-dark ${isActive ? 'active-nav-link' : ''}`}
+                  >
+                    {link.label}
+                  </Nav.Link>
+                );
+              })}
             </Nav>
 
             {/* Cart + Auth Buttons/Profile */}
@@ -164,7 +173,12 @@ const Header = () => {
                     as={Link}
                     to={link.path}
                     onClick={() => setShowOffcanvas(false)}
-                    className="px-4 py-3 text-dark border-bottom"
+                    className={`px-4 py-3 text-dark border-bottom ${
+                      window.location.pathname === link.path || 
+                      (link.path !== '/' && window.location.pathname.startsWith(link.path)) 
+                        ? 'active-nav-link' 
+                        : ''
+                    }`}
                   >
                     {link.label}
                   </Nav.Link>

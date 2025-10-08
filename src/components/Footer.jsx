@@ -1,7 +1,8 @@
 import { Container, Row, Col, Form, Button } from "react-bootstrap";
-import { FaFacebook, FaTwitter, FaYoutube, FaInstagram } from "react-icons/fa";
+import { FaYoutube, FaInstagram, FaPhoneAlt, FaEnvelope, FaMapMarkerAlt } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import logo2 from "../assets/logo2.png";
+
 
 function Footer() {
   return (
@@ -10,10 +11,10 @@ function Footer() {
         <Row>
           {/* Column 1 */}
           <Col md={3}>
-          <Link to="/">
-            <img src={logo2} alt="Mushroom Site" className="img-fluid" style={{width:"200px",height:"100px",objectFit:"contain",margin:"auto"}} />
-          </Link>
-        
+            <Link to="/">
+              <img src={logo2} alt="Mushroom Site" className="img-fluid" style={{ width: "200px", height: "100px", objectFit: "contain", margin: "auto" }} />
+            </Link>
+
             <p>
               "Mushroom made our first import seamless and stress-free. Their
               guidance and support were invaluable throughout the entire process."
@@ -23,37 +24,90 @@ function Footer() {
           {/* Column 2 */}
           <Col md={3}>
             <h5>Our Product</h5>
-            <ul className="list-unstyled">
-              <li>Organic Mushroom Kit</li>
-              <li>Premium Spawns</li>
-              <li>Grow Bags</li>
-              <li>Iot Kit</li>
+            <ul className="list-unstyled" style={{ lineHeight: "2" }}>
+              <li><Link to="/products" className="text-dark text-decoration-none">Organic Mushroom Kit</Link></li>
+              <li><Link to="/products" className="text-dark text-decoration-none">Premium Spawns</Link></li>
+              <li><Link to="/products" className="text-dark text-decoration-none">Grow Bags</Link></li>
+              <li><Link to="/products" className="text-dark text-decoration-none">IoT Kit</Link></li>
             </ul>
           </Col>
 
           {/* Column 3 */}
           <Col md={3}>
             <h5>Help</h5>
-            <ul className="list-unstyled">
-              <li>About Us</li>
-              <li>Contact Us</li>
-              <li>Terms and Conditions</li>
-              <li>Privacy and Policy</li>
-            </ul>
+            <ul className="list-unstyled" style={{ lineHeight: "2" }}>
+  <li>
+    <Link to="/about" className="text-dark text-decoration-none">About Us</Link>
+  </li>
+  <li>
+    <Link to="/contact" className="text-dark text-decoration-none">Contact Us</Link>
+  </li>
+  <li>
+    <Link to="/terms-conditions" className="text-dark text-decoration-none">Terms and Conditions</Link>
+  </li>
+  <li>
+    <Link to="/privacy-policy" className="text-dark text-decoration-none">Privacy and Policy</Link>
+  </li>
+  <li>
+    <Link to="/shipping-policy" className="text-dark text-decoration-none">Shipping Policy</Link>
+  </li>
+  <li>
+    <Link to="/refund-policy" className="text-dark text-decoration-none">Refund Policy</Link>
+  </li>
+</ul>
+
+
           </Col>
 
           {/* Column 4 */}
-          <Col md={3}>
-        
 
-            <h5>Social Media</h5>
+
+          <Col md={3} style={{ lineHeight: "2" }}>
+            <h5>Contact</h5>
+
+            {/* Email */}
+            <p className="mb-1 d-flex align-items-center gap-2">
+              <FaEnvelope size={16} color="rgb(50 51 50)" />
+              <span>support@mycomatrix.in</span>
+            </p>
+
+            {/* Phone */}
+            <p className="mb-1 d-flex align-items-center gap-2">
+              <FaPhoneAlt size={16} color="rgb(50 51 50)" />
+              <span>+91-9884248531</span>
+            </p>
+
+            {/* Location */}
+            <p className="mb-3 d-flex align-items-start gap-2 "style={{ lineHeight: "1.5" }}>
+              <FaMapMarkerAlt size={16} color="rgb(50 51 50)" className="mt-1" />
+              <span>
+                1/1/16 Ambalakar Street,<br />
+                Vadugapatti, <br />
+                Periyakulam - 625 603,<br />
+                Theni,Tamil Nadu
+              </span>
+            </p>
+
+            {/* Social Icons */}
             <div className="d-flex gap-3">
-              <a href="#"><FaFacebook size={24} color="#1877f2" /></a>
-              <a href="#"><FaTwitter size={24} color="#1DA1F2" /></a>
-              <a href="#"><FaYoutube size={24} color="#FF0000" /></a>
-              <a href="#"><FaInstagram size={24} color="#E1306C" /></a>
+              <a
+                href="https://www.youtube.com/@mycomatrix"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <FaYoutube size={24} color="rgb(50 51 50)" style={{border:"1px solid #000", borderRadius:"5px", padding:"8px",height:"40px",width:"45px"}}/>
+              </a>
+              <a
+                href="https://www.instagram.com/myco_matrix_mushroom?utm_source=qr&igsh=YWE2cnNmd3NxNGhw"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <FaInstagram size={24} color="rgb(50 51 50)" style={{border:"1px solid #000", borderRadius:"5px", padding:"8px",height:"40px",width:"45px"}}/>
+              </a>
             </div>
           </Col>
+
+
         </Row>
       </Container>
     </footer>

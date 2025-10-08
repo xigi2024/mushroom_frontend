@@ -57,7 +57,7 @@ const Contact = () => {
                                     </div>
                                     <div className="ms-3">
                                         <h6 className="mb-1">Address</h6>
-                                        <p className="mb-0 text-muted">Kamloops, Thailand 24300</p>
+                                        <p className="mb-0 text-muted">1/1/16 Ambalakar Street,<br />Vadugapatti,<br />Periyakulam-625 603<br />Theni, Tamil Nadu</p>
                                     </div>
                                 </div>
 
@@ -68,7 +68,7 @@ const Contact = () => {
                                     </div>
                                     <div className="ms-3">
                                         <h6 className="mb-1">Phone Number</h6>
-                                        <p className="mb-0 text-muted">+66 893944939</p>
+                                        <p className="mb-0 text-muted">+91 9884248531</p>
                                     </div>
                                 </div>
 
@@ -79,7 +79,7 @@ const Contact = () => {
                                     </div>
                                     <div className="ms-3">
                                         <h6 className="mb-1">E-Mail</h6>
-                                        <p className="mb-0 text-muted">freshfood72@gmail.com</p>
+                                        <p className="mb-0 text-muted">mycomatrix1@gmail.com</p>
                                     </div>
                                 </div>
 
@@ -88,10 +88,8 @@ const Contact = () => {
                                 <div className="mt-5">
                                     <h6 className="mb-3">Follow Us</h6>
                                     <div className="social-icons  d-flex gap-3">
-                                        <a href="#" className="text-primary"><FaFacebookF size={22} /></a>
-                                        <a href="#" className="text-info"><FaTwitter size={22} /></a>
-                                        <a href="#" className="text-danger"><FaYoutube size={22} /></a>
-                                        <a href="#" className="text-warning"><FaInstagram size={22} /></a>
+                                    <a href="https://www.youtube.com/@mycomatrix"><FaYoutube size={24} color="#FF0000" /></a>
+              <a href="https://www.instagram.com/myco_matrix_mushroom?utm_source=qr&igsh=YWE2cnNmd3NxNGhw"><FaInstagram size={24} color="#E1306C" /></a>
                                     </div>
                                 </div>
                             </div>

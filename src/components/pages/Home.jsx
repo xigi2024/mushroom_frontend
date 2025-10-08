@@ -9,6 +9,7 @@ import "../styles/home.css"
 import img1 from "../../assets/img1.png";
 import img2 from "../../assets/img2.png";
 import img3 from "../../assets/img3.png";
+import axios from "axios";
 
 const PromisesSection = () => {
   const promises = [
@@ -114,7 +115,7 @@ const PromisesSection = () => {
         </Row>
       </Container>
 
-      <style jsx>{`
+      <style jsx="true">{`
     .curved-lines-container {
       position: absolute;
       top: -80px;
@@ -163,7 +164,7 @@ const FavouriteProducts = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const response = await fetch("http://127.0.0.1:8000/api/products/");
+        const response = await fetch("https://mycomatrix.in/api/products/");
 
         if (!response.ok) {
           throw new Error("Failed to fetch products");
@@ -404,7 +405,7 @@ const FavouriteProducts = () => {
 };
 
 const ProductSection = () => {
-  const products = [
+  const [products, setProducts] = useState([
     {
       title: "Organic Mushroom Kit",
       img: "https://i.pinimg.com/736x/df/93/0d/df930daeefab65061ff7482893534831.jpg",
@@ -425,15 +426,38 @@ const ProductSection = () => {
       img: "https://i.pinimg.com/736x/df/93/0d/df930daeefab65061ff7482893534831.jpg",
       desc: "Smart IoT kit for modern mushroom cultivation.",
     },
-  ];
+  ]);
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await axios.get("https://mycomatrix.in/api/category/");
+        const mapped = response.data.map((item) => ({
+          title: item.name,
+          img: item.image,
+          desc: item.description || "No description available",
+        }));
+        setProducts(mapped);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+        // Keep the default products if API fails
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   return (
     <Container fluid className="pt-5" style={{ backgroundColor: "#f1fff0" }}>
       <Row className="align-items-center">
         {/* Left Side Content */}
-        <Col md={4} className="text-content p-0 d-flex flex-column justify-content-between" style={{ height: "100%" }}>
+        <Col
+          md={4}
+          className="text-content p-0 d-flex flex-column justify-content-between"
+          style={{ height: "100%" }}
+        >
           {/* Top Text */}
-          <div className="p-5"  >
+          <div className="p-5">
             <p className="text-muted small mb-2">
               The best of our collection, ready for you
             </p>
@@ -463,11 +487,14 @@ const ProductSection = () => {
               {[...Array(2)].map((_, i) => (
                 <Fragment key={i}>
                   {products.map((product, idx) => (
-                    <div className="marquee-item" key={idx} style={{height:"330px"}}>
+                    <div
+                      className="marquee-item"
+                      key={idx}
+                      style={{ height: "330px" }}
+                    >
                       <Card className="custom-card h-100 shadow-sm border-0">
                         <div className="card-image-container">
                           <Card.Img
-                          
                             className="service-img"
                             src={product.img}
                             alt={product.title}

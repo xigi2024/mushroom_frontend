@@ -92,7 +92,7 @@ export const AuthProvider = ({ children }) => {
       delete axios.defaults.headers.common["Authorization"];
       
       const response = await axios.post(
-        "http://127.0.0.1:8000/api/login/",
+        "https://mycomatrix.in/api/login/",
         { 
           email: email.trim(), 
           password: password 
@@ -203,7 +203,7 @@ export const AuthProvider = ({ children }) => {
       
       // Send sync request
       const response = await axios.post(
-        'http://127.0.0.1:8000/api/cart/sync-guest-cart/',
+        'https://mycomatrix.in/api/cart/sync-guest-cart/',
         { items: itemsToSync },
         {
           headers: {
