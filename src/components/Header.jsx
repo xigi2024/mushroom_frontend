@@ -1,22 +1,22 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Navbar as BSNavbar, Nav, Container, Row, Col, Offcanvas, Dropdown } from 'react-bootstrap';
-import { ShoppingCart, Menu } from 'lucide-react';
+import { Navbar as BSNavbar, Nav, Container, Row, Col, Dropdown } from 'react-bootstrap';
+import { ShoppingCart, Home, Package, Info, Phone, User, LogOut, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import "./styles/header.css";
-import logo2 from "../assets/logo2.png";
+import logo2 from "/assets/logo.png";
 
 const Header = () => {
-  const [showOffcanvas, setShowOffcanvas] = useState(false);
   const { isAuthenticated, user, logout } = useAuth();
   const { getTotalItems } = useCart();
+  const [showMobileAuth, setShowMobileAuth] = useState(false);
 
   const cartItemsCount = getTotalItems();
 
   const handleLogout = () => {
     logout();
-    setShowOffcanvas(false);
+    setShowMobileAuth(false);
   };
 
   const getUserInitial = () => {
@@ -42,8 +42,7 @@ const Header = () => {
         <Container>
           <Row className="align-items-center">
             <Col md={3} className="d-none d-md-block">
-              <div className="d-flex align-items-center">
-               
+              <div className="d-flex align-items-center top-text">
                 <a href="https://www.instagram.com/myco_matrix_mushroom?utm_source=qr&igsh=YWE2cnNmd3NxNGhw" target="_blank" rel="noopener noreferrer" className="text-white me-3 text-decoration-none">
                   <i className="fab fa-instagram"></i>
                 </a>
@@ -53,12 +52,12 @@ const Header = () => {
               </div>
             </Col>
             <Col md={6} className="text-center">
-              <span className="d-none d-md-inline">Welcome to Myco Matrix</span>
+              <span className="d-none d-md-inline top-text">Welcome to Myco Matrix</span>
             </Col>
             <Col md={3} className="text-end d-none d-md-block">
               <a href="mailto:mycomatrix1@gmail.com" className="text-white text-decoration-none">
                 <i className="fas fa-envelope me-1"></i>
-                <span className="small">mycomatrix1@gmail.com</span>
+                <span className="top-text">mycomatrix1@gmail.com</span>
               </a>
             </Col>
           </Row>
@@ -68,7 +67,7 @@ const Header = () => {
       {/* Main Navbar */}
       <BSNavbar bg="white" expand="lg" className="sticky-top main-navbar">
         <Container>
-          {/* Logo - Left Side */}
+          {/* Logo */}
           <BSNavbar.Brand as={Link} to="/" className="logo-brand">
             <img 
               src={logo2} 
@@ -79,15 +78,16 @@ const Header = () => {
 
           {/* Desktop Navigation - Center */}
           <div className="d-none d-lg-flex align-items-center w-100 justify-content-between">
-            <Nav className="mx-auto fw-semibold main-nav">
+            <Nav className="ms-auto fw-semibold main-nav">
               {navLinks.map((link) => {
-                const isActive = window.location.pathname === link.path || 
-                               (link.path !== '/' && window.location.pathname.startsWith(link.path));
+                const isActive =
+                  window.location.pathname === link.path ||
+                  (link.path !== '/' && window.location.pathname.startsWith(link.path));
                 return (
-                  <Nav.Link 
-                    key={link.path} 
-                    as={Link} 
-                    to={link.path} 
+                  <Nav.Link
+                    key={link.path}
+                    as={Link}
+                    to={link.path}
                     className={`nav-link-item ${isActive ? 'active-nav-link' : ''}`}
                   >
                     {link.label}
@@ -141,123 +141,115 @@ const Header = () => {
             </div>
           </div>
 
-          {/* Mobile Toggle Button - Right Side */}
-          <button
-            className="navbar-toggler d-lg-none border-0 p-0"
-            onClick={() => setShowOffcanvas(true)}
-            aria-label="Toggle navigation"
-          >
-            <Menu size={28} className="text-dark" />
-          </button>
-
-          {/* Offcanvas Mobile Menu */}
-          <Offcanvas show={showOffcanvas} onHide={() => setShowOffcanvas(false)} placement="end" className="mobile-sidebar">
-            <Offcanvas.Header closeButton className="sidebar-header">
-              <BSNavbar.Brand as={Link} to="/" onClick={() => setShowOffcanvas(false)}>
-                <img 
-                  src={logo2} 
-                  alt="MYCO MATRIX" 
-                  className="img-fluid" 
-                  style={{ width: "80px", height: "80px", objectFit: "contain" }} 
-                />
-              </BSNavbar.Brand>
-            </Offcanvas.Header>
-            
-            <Offcanvas.Body className="sidebar-body">
-              {/* User Info if authenticated */}
-              {isAuthenticated && (
-                <div className="user-info-mobile">
-                  <div className="user-avatar-mobile">
-                    <span className="user-initial-mobile">{getUserInitial()}</span>
-                  </div>
-                  <div className="user-details">
-                    <div className="user-name">{user?.name || 'User'}</div>
-                    <div className="user-email small text-muted">{user?.email}</div>
-                  </div>
-                </div>
-              )}
-
-              <Nav className="flex-column mobile-nav">
-                {navLinks.map((link) => (
-                  <Nav.Link
-                    key={link.path}
-                    as={Link}
-                    to={link.path}
-                    onClick={() => setShowOffcanvas(false)}
-                    className={`mobile-nav-link ${
-                      window.location.pathname === link.path || 
-                      (link.path !== '/' && window.location.pathname.startsWith(link.path)) 
-                        ? 'active-nav-link' 
-                        : ''
-                    }`}
-                  >
-                    {link.label}
-                  </Nav.Link>
-                ))}
-              </Nav>
-
-              {/* Cart in Offcanvas */}
-              <div className="offcanvas-cart-section">
-                <Link 
-                  to="/cart" 
-                  className="cart-offcanvas-link"
-                  onClick={() => setShowOffcanvas(false)}
-                >
-                  <ShoppingCart size={20} className="me-2" />
-                  Shopping Cart 
-                  {cartItemsCount > 0 && (
-                    <span className="cart-count-badge">
-                      {cartItemsCount}
-                    </span>
-                  )}
-                </Link>
-              </div>
-
-              <div className="mobile-auth-section">
-                {isAuthenticated ? (
-                  <>
-                    <Link 
-                      to="/user-dashboard" 
-                      className="btn btn-primary w-100 mb-2 dashboard-btn"
-                      onClick={() => setShowOffcanvas(false)}
-                    >
-                      <i className="fas fa-tachometer-alt me-2"></i>
-                      Dashboard
-                    </Link>
-                    <button 
-                      className="btn btn-outline-danger w-100 logout-btn" 
-                      onClick={handleLogout}
-                    >
-                      <i className="fas fa-sign-out-alt me-2"></i>
-                      Logout
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Link 
-                      to="/login" 
-                      className="btn btn-primary w-100 mb-3 login-btn-mobile"
-                      onClick={() => setShowOffcanvas(false)}
-                    >
-                      Login
-                    </Link>
-                    <div className="text-center">
-                      <span className="text-muted small me-2">Don't have an account?</span>
-                      <Link 
-                        to="/register" 
-                        className="signup-link"
-                        onClick={() => setShowOffcanvas(false)}
-                      >
-                        Sign Up
-                      </Link>
-                    </div>
-                  </>
-                )}
-              </div>
-            </Offcanvas.Body>
-          </Offcanvas>
+          {/* Mobile: Cart Icon Only */}
+          <Link to="/cart" className="d-lg-none position-relative text-dark cart-icon" style={{ textDecoration: 'none' }}>
+            <ShoppingCart size={22} />
+            {cartItemsCount > 0 && (
+              <span className="badges">
+                {Math.min(cartItemsCount, 99)}
+                {cartItemsCount > 99 && '+'}
+              </span>
+            )}
+          </Link>
         </Container>
       </BSNavbar>
+
+      {/* Mobile Bottom Navigation */}
+      <div className="mobile-bottom-nav d-lg-none">
+        <Link 
+          to="/" 
+          className={`nav-icon ${window.location.pathname === '/' ? 'active' : ''}`}
+          data-label="Home"
+        >
+          <Home size={22} />
+        </Link>
+        
+        <Link 
+          to="/products" 
+          className={`nav-icon ${window.location.pathname.startsWith('/products') ? 'active' : ''}`}
+          data-label="Products"
+        >
+          <Package size={22} />
+        </Link>
+        
+        <Link 
+          to="/about" 
+          className={`nav-icon ${window.location.pathname === '/about' ? 'active' : ''}`}
+          data-label="About"
+        >
+          <Info size={22} />
+        </Link>
+        
+        <Link 
+          to="/contact" 
+          className={`nav-icon ${window.location.pathname === '/contact' ? 'active' : ''}`}
+          data-label="Contact"
+        >
+          <Phone size={22} />
+        </Link>
+        
+        <div 
+          className={`nav-icon ${window.location.pathname.includes('/user-dashboard') || window.location.pathname.includes('/login') ? 'active' : ''}`}
+          onClick={() => setShowMobileAuth(!showMobileAuth)}
+          data-label="Account"
+        >
+          <User size={22} />
+        </div>
+      </div>
+
+      {/* Mobile Auth Popup */}
+      {showMobileAuth && (
+        <div className="mobile-auth-popup">
+          <div className="popup-overlay" onClick={() => setShowMobileAuth(false)}></div>
+          <div className="popup-content">
+            {isAuthenticated ? (
+              <>
+                <div className="user-info-popup">
+                  <div className="user-avatar-popup">
+                    <span>{getUserInitial()}</span>
+                  </div>
+                  <div>
+                    <div className="user-name">{user?.name || 'User'}</div>
+                    <div className="user-email">{user?.email}</div>
+                  </div>
+                </div>
+                <Link 
+                  to="/user-dashboard" 
+                  className="popup-item"
+                  onClick={() => setShowMobileAuth(false)}
+                >
+                  <LayoutDashboard size={18} />
+                  Dashboard
+                </Link>
+                <div className="popup-item text-danger" onClick={handleLogout}>
+                  <LogOut size={18} />
+                  Logout
+                </div>
+              </>
+            ) : (
+              <>
+                <Link 
+                  to="/login" 
+                  className="popup-item"
+                  onClick={() => setShowMobileAuth(false)}
+                >
+                  Login
+                </Link>
+                <Link 
+                  to="/register" 
+                  className="popup-item"
+                  onClick={() => setShowMobileAuth(false)}
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
+            <div className="popup-close" onClick={() => setShowMobileAuth(false)}>
+              Close
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 };

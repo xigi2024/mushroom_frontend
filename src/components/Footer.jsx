@@ -1,12 +1,12 @@
 import { Container, Row, Col, Form, Button } from "react-bootstrap";
 import { FaYoutube, FaInstagram, FaPhoneAlt, FaEnvelope, FaMapMarkerAlt } from "react-icons/fa";
 import { Link } from "react-router-dom";
-import logo2 from "../assets/logo2.png";
+import logo2 from "/assets/logo2.png";
 
 
 function Footer() {
   return (
-    <footer className="bg-white text-dark py-5 mt-5">
+    <footer className="bg-white text-dark pt-5 pb-3 mt-5">
       <Container>
         <Row>
           {/* Column 1 */}
@@ -109,7 +109,26 @@ function Footer() {
 
 
         </Row>
+
       </Container>
+              {/* Copyright */}
+              <div className="row border-top p-0 mt-3 phone" >
+          <div
+            className="col-12 text-center"
+            style={{
+              borderTop: "1px solid rgba(255, 255, 255, 0.1)",
+
+              marginTop: "20px"
+            }}
+          >
+            <p className="mb-0">
+              Copyright © 2025 Mycomatrix Pvt.Ltd | Powered by{' '}
+              <a href="https://xigi.in/" className="color text-decoration-none" target="_blank" rel="noopener noreferrer">
+                Xigi Tech.Pvt.Ltd.
+              </a>
+            </p>
+          </div>
+        </div>
     </footer>
   );
 }

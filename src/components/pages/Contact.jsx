@@ -93,16 +93,6 @@ const Contact = () => {
                                     Feel free to contact us via form or drop an enquiry.
                                 </p>
 
-                                {/* Address */}
-                                <div className="contact-item d-flex align-items-center mb-3">
-                                    <div className="contact-icon">
-                                        <FaMapMarkerAlt className="color" />
-                                    </div>
-                                    <div className="ms-3">
-                                        <h6 className="mb-1">Address</h6>
-                                        <p className="mb-0 text-muted">1/1/16 Ambalakar Street, Vadugapatti, Periyakulam-625 603, Theni, Tamil Nadu</p>
-                                    </div>
-                                </div>
 
                                 {/* Phone */}
                                 <div className="contact-item d-flex align-items-center mb-3">
@@ -126,6 +116,16 @@ const Contact = () => {
                                     </div>
                                 </div>
 
+                                {/* Address */}
+                                <div className="contact-item d-flex align-items-center mb-3">
+                                    <div className="contact-icon">
+                                        <FaMapMarkerAlt className="color" />
+                                    </div>
+                                    <div className="ms-3">
+                                        <h6 className="mb-1">Address</h6>
+                                        <p className="mb-0 text-muted">1/1/16 Ambalakar Street, Vadugapatti, Periyakulam-625 603, Theni, Tamil Nadu</p>
+                                    </div>
+                                </div>
                                 <hr className='border-3 mt-5' />
 
                                 <div className="mt-5">

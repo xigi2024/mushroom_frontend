@@ -46,14 +46,13 @@
     position: relative;
     z-index: 2;
     color: white;
-    max-width: 1200px;
     margin: 0 auto;
     padding: 0 20px;
     width: 100%;
   }
   
   .slide-content h1 {
-    font-size: 2.5rem;
+    font-size: 50px;
     font-weight: bold;
     line-height: 1.2;
   }
@@ -95,10 +94,10 @@
     right: 20px;
   }
   .testimonial-img{
-    width: '340px' ; 
-    height: '200px' ; 
-    object-fit: 'cover';
-    max-width: '100%';
+    width: 340px ; 
+    height: 240px ; 
+    object-fit: cover;
+    max-width: 100%;
   }
   
   /* Hero Carousel Responsive Styles */
@@ -232,8 +231,8 @@
      PROMISES SECTION STYLES
      ================================ */
   .img-size {
-      width: 90px;
-      height: 90px;
+      width: 125px;
+      height: 125px;
   }
   
   /* Promises Section Responsive Styles */
@@ -298,10 +297,12 @@
   .marquee-item:hover {
       transform: translateY(-3px);
   }
-  
+  .card-image-container{
+    height: 260px;
+  }
   .card-image-container img {
       width: 100%;
-      height: 250px;
+      height: 260px ;
       object-fit: cover;
       border-top-left-radius: 10px;
       border-top-right-radius: 10px;
@@ -323,9 +324,7 @@
       margin-right: 30px;
     }
     
-    .card-image-container img {
-      height: 220px;
-    }
+    
   }
   
   @media (max-width: 768px) {
@@ -576,7 +575,7 @@
       position: absolute;
       right: 0;
       bottom: 0;
-      top: 380px;
+      top: 402px;
       left: 0;
       z-index: 2;
       display: flex;
@@ -692,4 +691,50 @@
     }
     
   }
-  
+.text-muted{
+  color: rgb(36 36 36 / 75%);
+}
+.final{
+  border: 1px solid #efeded;
+}
+  @media (min-width: 992px) {
+    /* Desktop only */
+    .final-cta {
+      padding-left: 60px;
+    }
+    .iot-image{
+      max-height: 550px;
+      object-fit: cover;
+    }
+    .favourite{
+      padding-left: 60px;
+    }
+    .favourite-section{
+      padding-top: 70px;
+      padding-bottom: 70px;
+    }
+    .titles{
+      font-size: 22px !important;
+      font-weight: 600 !important;
+    }
+    .para{
+      font-size: 18px !important;
+    }
+    .favourites{
+      padding-top: 70px;
+      padding-bottom: 70px;
+    }
+    .card-texts{
+      padding: 18px;
+    }
+    .describe{
+      width: 600px;
+    }
+    .describes{
+      width: 900px;
+    }
+    .cta-img{
+      height: 390px;
+    }
+    
+  }

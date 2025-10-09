@@ -7,7 +7,7 @@ import "react-toastify/dist/ReactToastify.css";
 import { Row, Col, Container } from "react-bootstrap";
 import "../styles/login.css";
 import { useAuth } from "../../context/AuthContext";
-import mushroomImg from "../../assets/mushoom-img.jpg";
+import mushroomImg from "/assets/mushoom-img.jpg";
 
 const Login = () => {
   const navigate = useNavigate();

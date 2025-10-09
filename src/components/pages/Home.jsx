@@ -1,41 +1,29 @@
 import React, { Fragment, useState, useEffect } from 'react';
-import { Container, Navbar, Nav, Row, Col, Card, Button, Carousel, Form, Spinner, Alert , Modal } from 'react-bootstrap';
+import { Container, Navbar, Nav, Row, Col, Card, Button, Carousel, Form, Spinner, Alert, Modal } from 'react-bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { useNavigate, Link } from "react-router-dom";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { useCart } from "../../context/CartContext";
 import "../styles/home.css"
-import img1 from "../../assets/img1.png";
-import img2 from "../../assets/img2.png";
-import img3 from "../../assets/img3.png";
 import axios from "axios";
-import leafImage from '../../assets/leaf.png';
-import mushroomImage from '../../assets/mushroom.png';
-import iotImage from '../../assets/iot.png';
-import monitorImage from '../../assets/monitor.png';
-import automateImage from '../../assets/automate.png';
-import growthImage from '../../assets/growth.png';
 
 const PromisesSection = () => {
   const promises = [
     {
-      icon: img1,
+      icon: "/assets/img1.png",
       title: "IoT Monitoring",
-      description:
-        "Advanced sensors continuously track temperature, humidity, CO₂ levels, and light conditions in real-time.",
+      description: "Advanced sensors continuously track temperature, humidity, CO₂ levels, and light conditions in real-time.",
     },
     {
-      icon: img2,
+      icon: "/assets/img2.png",
       title: "Perfect Growth",
-      description:
-        "Automated systems adjust the environment instantly to maintain ideal conditions for mushroom cultivation.",
+      description: "Automated systems adjust the environment instantly to maintain ideal conditions for mushroom cultivation.",
     },
     {
-      icon: img3,
+      icon: "/assets/img3.png",
       title: "Fresh Delivery",
-      description:
-        "Mushrooms are harvested at peak freshness and delivered directly to your door within hours.",
+      description: "Mushrooms are harvested at peak freshness and delivered directly to your door within hours.",
     },
   ];
   return (
@@ -45,9 +33,9 @@ const PromisesSection = () => {
         <Row className="text-center mb-5">
           <Col>
             <p className="color subtext fw-semibold mb-2">
-              Our promises to you for quality and freshness.
+              Nature Meets Technology for Perfect Mushrooms.
             </p>
-            <h2 className="fw-bold color head">Fresh, Safe & Straight to You</h2>
+            <h2 className="fw-bold color head">Freshness Delivered Daily</h2>
           </Col>
         </Row>
         {/* Promises Cards - 3 columns with curved lines */}
@@ -110,8 +98,8 @@ const PromisesSection = () => {
                     </div>
                   </div>
 
-                  <Card.Title className="h4 fw-bold mb-3">{promise.title}</Card.Title>
-                  <Card.Text className="text-muted fs-5">
+                  <Card.Title className="h4 titles mb-3">{promise.title}</Card.Title>
+                  <Card.Text className="text-muted  para">
                     {promise.description}
                   </Card.Text>
                 </Card.Body>
@@ -170,12 +158,13 @@ const FavouriteProducts = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const response = await fetch("https://mycomatrix.in/api/products/");
+        const response = await fetch("http://127.0.0.1:8000/api/products/");
 
         if (!response.ok) {
           throw new Error("Failed to fetch products");
         }
 
+    
         const productsData = await response.json();
         setProducts(productsData);
       } catch (err) {
@@ -292,34 +281,25 @@ const FavouriteProducts = () => {
     <>
       <ToastContainer position="top-right" autoClose={3000} />
 
-      <section style={{ backgroundColor: "#f1fff0" }} className="py-5 my-5">
+      <section style={{ backgroundColor: "#f1fff0" }} className="favourites my-5">
         <Container>
-          <Row className="align-items-center carousel">
-            <Col lg={6}>
+
+          <Row className="align-items-center carousel mb-5">
+            <div className='d-flex justify-content-between align-items-center'>
               <h2 className="fw-bold color">
-                Don't Miss These <br /> Collection
+                Don't Miss These  Collection
               </h2>
+
               <Link to="/products" className="btn button mt-3">
                 View More Products
               </Link>
-            </Col>
-
-            {/* Right Image */}
-            <Col lg={6} className="d-flex justify-content-end align-items-end text-end">
-              <img
-                src="../src/assets/prod1.png"
-                alt="Mushroom"
-                className="w-75"
-                style={{ height: "250px", objectFit: "contain" }}
-              />
-            </Col>
+            </div>
           </Row>
-
           {/* Carousel Section */}
           <Carousel interval={3000} controls={false} indicators={true}>
             {productChunks.map((chunk, index) => (
               <Carousel.Item key={index}>
-                <Row className="justify-content-center" style={{ paddingLeft: "130px" }}>
+                <Row className="justify-content-center">
                   {chunk.map((product, idx) => (
                     <Col key={`${index}-${idx}`} md={3} sm={6} className="mb-4">
                       <Card className="h-100 text-center shadow-sm border-0 rounded-4">
@@ -334,16 +314,22 @@ const FavouriteProducts = () => {
                           style={{ height: "200px", objectFit: "cover", cursor: "pointer" }}
                           onClick={() => handleViewDetails(product)}
                         />
-                        <Card.Body>
+                        <Card.Body className='card-texts'>
                           <Card.Title
-                            className="fw-semibold"
+                            className="fw-semibold mt-2"
                             style={{ cursor: "pointer" }}
                             onClick={() => handleViewDetails(product)}
                           >
                             {product.name}
                           </Card.Title>
-
-                          <div className="d-flex justify-content-center gap-2 mb-3">
+                          {product.description && (
+    <Card.Text className="text-muted small mb-2">
+      {product.description.length > 60
+        ? product.description.slice(0, 60) + "..."
+        : product.description}
+    </Card.Text>
+  )}
+                          {/* <div className="d-flex justify-content-center gap-2 mb-3">
                             {product.size && (
                               <span className="badge bg-light text-dark border">{product.size}</span>
                             )}
@@ -352,10 +338,10 @@ const FavouriteProducts = () => {
                             )}
                           </div>
 
-                          <p className="fw-bold text-success">₹{parseFloat(product.price).toFixed(2)}</p>
+                          <p className="fw-bold text-success">₹{parseFloat(product.price).toFixed(2)}</p> */}
 
                           <Button
-                            className="w-100 mt-2 button"
+                            className="w-100 mt-2 mb-2 button"
                             onClick={() => handleAddToCart(product)}
                             disabled={addingToCart === product.id}
                           >
@@ -419,13 +405,13 @@ const ProductSection = () => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const response = await axios.get("https://mycomatrix.in/api/category/");
-        
+        const response = await axios.get("http://127.0.0.1:8000/api/category/");
+
         console.log("API Response:", response.data); // Debug log
-        
+
         // API response structure check
         let categories = [];
-        
+
         if (Array.isArray(response.data)) {
           // If response is directly an array
           categories = response.data;
@@ -444,7 +430,7 @@ const ProductSection = () => {
           img: item.image || item.img || "https://i.pinimg.com/736x/df/93/0d/df930daeefab65061ff7482893534831.jpg",
           desc: item.description || item.desc || "No description available",
         }));
-        
+
         setProducts(mapped);
         setError(null);
       } catch (error) {
@@ -473,14 +459,12 @@ const ProductSection = () => {
               <h2 className="fw-bold mb-3" style={{ color: "#136d2b", fontSize: "40px" }}>
                 Don't Miss These <br /> Favourite
               </h2>
+              <p className="text-muted small mb-2">
+                Discover the joy of growing your own mushrooms with our starter kits.
+              </p>
+
             </div>
-            <div className="mt-4 text-left mb-5">
-              <img
-                src="../src/assets/mushroom-left.png"
-                alt="Mushroom"
-                style={{ maxWidth: "100%", height: "350px" }}
-              />
-            </div>
+
           </Col>
           <Col md={8}>
             <div className="d-flex justify-content-center align-items-center" style={{ height: "400px" }}>
@@ -510,7 +494,7 @@ const ProductSection = () => {
             </div>
             <div className="mt-4 text-left mb-5">
               <img
-                src="../src/assets/mushroom-left.png"
+                src="/assets/mushroom-left.png"
                 alt="Mushroom"
                 style={{ maxWidth: "100%", height: "350px" }}
               />
@@ -520,7 +504,7 @@ const ProductSection = () => {
             <div className="d-flex justify-content-center align-items-center" style={{ height: "400px" }}>
               <div className="alert alert-warning text-center">
                 <p>{error}</p>
-                <button 
+                <button
                   className="btn btn-sm btn-outline-secondary"
                   onClick={() => window.location.reload()}
                 >
@@ -550,7 +534,7 @@ const ProductSection = () => {
             </div>
             <div className="mt-4 text-left mb-5">
               <img
-                src="../src/assets/mushroom-left.png"
+                src="/assets/mushroom-left.png"
                 alt="Mushroom"
                 style={{ maxWidth: "100%", height: "350px" }}
               />
@@ -569,77 +553,76 @@ const ProductSection = () => {
   }
 
   return (
-    <Container fluid className="pt-5" style={{ backgroundColor: "#f1fff0" }}>
-      <Row className="align-items-center">
-        {/* Left Side Content */}
-        <Col
-          md={4}
-          className="text-content p-0 d-flex flex-column justify-content-between"
-          style={{ height: "100%" }}
-        >
-          {/* Top Text */}
-          <div className="p-4">
-            <p className="text-muted small mb-2">
-              The best of our collection, ready for you
-            </p>
-            <h2
-              className="fw-bold mb-3"
-              style={{ color: "#136d2b", fontSize: "40px" }}
-            >
-              Don't Miss These <br /> Favourite
-            </h2>
-          </div>
+    <div className=" favourite-section" style={{ backgroundColor: "#f1fff0" }}>
+      <Container>
+        <Row className="align-items-center">
+          {/* Left Side Content */}
+          <Col
+            md={4}
+            className="text-content p-0 d-flex flex-column justify-content-between"
+            style={{ height: "100%" }}
+          >
 
-          {/* Bottom Image */}
-          <div className="mt-4 text-left mb-5">
-            <img
-              src="../src/assets/mushroom-left.png"
-              alt="Mushroom"
-              style={{ maxWidth: "100%", height: "350px" }}
-            />
-          </div>
-        </Col>
+            <div className="p-4">
+              <h2
+                className="fw-bold mb-3"
+                style={{ color: "#136d2b", fontSize: "40px" }}
+              >
+                Don't Miss Our <br /> Favourite Kit
+              </h2>
+              <p className="text-muted para mb-4">
+                Discover the joy of growing your own mushrooms with our premium starter kits. Whether you're a seasoned grower or a beginner, we have everything you need to start your mushroom farming journey today!
+              </p>
+              <button className="login-btn" onClick={() => window.location.href = '/products'}>
+                Shop Now
+              </button>
 
-        {/* Right Side Marquee */}
-        <Col md={8}>
-          <div className="marquee-slider">
-            <div className="marquee-track">
-              {/* Repeat items twice for seamless loop */}
-              {[...Array(2)].map((_, i) => (
-                <Fragment key={i}>
-                  {products.map((product, idx) => (
-                    <div
-                      className="marquee-item"
-                      key={`${i}-${idx}`}
-                      style={{ height: "330px" }}
-                    >
-                      <Card className="custom-card h-100 shadow-sm border-0">
-                        <div className="card-image-container">
-                          <Card.Img
-                            className="service-img"
-                            src={product.img}
-                            alt={product.title}
-                            onError={(e) => {
-                              e.target.src = "https://i.pinimg.com/736x/df/93/0d/df930daeefab65061ff7482893534831.jpg";
-                            }}
-                          />
-                        </div>
-                        <Card.Body>
-                          <h5 className="fw-semibold">{product.title}</h5>
-                          <Card.Text className="text-muted small">
-                            {product.desc}
-                          </Card.Text>
-                        </Card.Body>
-                      </Card>
-                    </div>
-                  ))}
-                </Fragment>
-              ))}
             </div>
-          </div>
-        </Col>
-      </Row>
-    </Container>
+
+
+          </Col>
+
+          {/* Right Side Marquee */}
+          <Col md={8}>
+            <div className="marquee-slider">
+              <div className="marquee-track">
+                {/* Repeat items twice for seamless loop */}
+                {[...Array(2)].map((_, i) => (
+                  <Fragment key={i}>
+                    {products.map((product, idx) => (
+                      <div
+                        className="marquee-item"
+                        key={`${i}-${idx}`}
+                        style={{ height: "400px" }}
+                      >
+                        <Card className="custom-card h-100 shadow-sm border-0">
+                          <div className="card-image-container">
+                            <Card.Img
+                              className="service-img"
+                              src={product.img}
+                              alt={product.title}
+                              onError={(e) => {
+                                e.target.src = "https://i.pinimg.com/736x/df/93/0d/df930daeefab65061ff7482893534831.jpg";
+                              }}
+                            />
+                          </div>
+                          <Card.Body>
+                            <h5 className="fw-semibold">{product.title}</h5>
+                            <Card.Text className="text-muted small">
+                              {product.desc}
+                            </Card.Text>
+                          </Card.Body>
+                        </Card>
+                      </div>
+                    ))}
+                  </Fragment>
+                ))}
+              </div>
+            </div>
+          </Col>
+        </Row>
+      </Container>
+    </div>
   );
 };
 
@@ -653,14 +636,15 @@ const HeroCarousel = () => {
       title: "Smart Farming.Grown with Care & Technology.",
       subtitle: "From IoT monitored farms to your doorstep - organic, fresh, and safe.",
       buttonText: "Shop Fresh Mushrooms",
-      backgroundImage: "https://i.pinimg.com/1200x/e0/d9/7b/e0d97bcddd179d8aff92eb69eb17a0ac.jpg"
+      backgroundImage: "https://i.pinimg.com/1200x/d0/ab/7d/d0ab7de881fafee37fed4bc1600a6510.jpg"
+
     },
     {
       id: 2,
       title: "Premium Quality Mushrooms. Sustainably Grown.",
       subtitle: "Advanced cultivation techniques ensuring the highest quality organic mushrooms.",
       buttonText: "Start Your Journey",
-      backgroundImage: "https://i.pinimg.com/1200x/d0/ab/7d/d0ab7de881fafee37fed4bc1600a6510.jpg"
+      backgroundImage: "/assets/banner.png"
     },
     {
       id: 3,
@@ -712,10 +696,10 @@ const HeroCarousel = () => {
               <div className="container">
                 <div className="row">
                   <div className="col-lg-8 col-xl-7">
-                  <h1 className="mb-3 pb-0"> {slide.title} </h1>
+                    <h1 className="mb-3 pb-0"> {slide.title} </h1>
                     <p className="subtitle">{slide.subtitle}</p>
                     <button
-                      className="button cursor-pointer"
+                      className="login-btn cursor-pointer border-none"
                       onClick={() => handleRedirect(slide.buttonText)}
                     >
                       {slide.buttonText}
@@ -741,117 +725,123 @@ const HeroCarousel = () => {
 
 const TestimonialsSection = () => {
   const [index, setIndex] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
 
   const handleSelect = (selectedIndex) => {
     setIndex(selectedIndex);
   };
+
+  useEffect(() => {
+    const checkScreenSize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    checkScreenSize();
+    window.addEventListener("resize", checkScreenSize);
+    return () => window.removeEventListener("resize", checkScreenSize);
+  }, []);
 
   const testimonials = [
     {
       id: 1,
       name: "Kaveen",
       location: "",
-      text: "\"Mushroom made our first import seamless and stress-free. Their guidance and support were invaluable throughout the entire process.\"",
-      image: "https://i.pinimg.com/736x/6c/c5/19/6cc519f013abcf2ad6168a126ee877db.jpg"
+      text: '"Mushroom made our first import seamless and stress-free. Their guidance and support were invaluable throughout the entire process."',
+      image:
+        "https://i.pinimg.com/736x/c7/61/cb/c761cbf39d8c6f6eb3c38248b5b47209.jpg",
     },
     {
       id: 2,
       name: "Priya",
       location: "Chennai",
-      text: "\"I never knew mushrooms could be this fresh! The IoT thing really works - every batch tastes amazing.\"",
-      image: "https://i.pinimg.com/1200x/0c/4e/fd/0c4efdb2f5bf2a3e993fc23f4de50e4e.jpg"
+      text: '"I never knew mushrooms could be this fresh! The IoT thing really works - every batch tastes amazing."',
+      image:
+        "https://i.pinimg.com/736x/2c/e0/c8/2ce0c8e9423351561f91c33645141120.jpg",
     },
     {
       id: 3,
       name: "Rahul",
       location: "Bangalore",
-      text: "\"The quality of mushrooms is consistently excellent. Their delivery is always on time and the packaging is eco-friendly!\"",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=687&q=80"
+      text: '"The quality of mushrooms is consistently excellent. Their delivery is always on time and the packaging is eco-friendly!"',
+      image:
+        "https://i.pinimg.com/736x/62/7d/7a/627d7ac2d198b462f5a558ac49ecfc9f.jpg",
     },
     {
       id: 4,
       name: "Anjali",
       location: "Mumbai",
-      text: "\"As a restaurant owner, I rely on consistent quality. These mushrooms have never disappointed me and my customers love them!\"",
-      image: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=688&q=80"
-    }
+      text: '"As a restaurant owner, I rely on consistent quality. These mushrooms have never disappointed me and my customers love them!"',
+      image:
+        "https://i.pinimg.com/736x/79/aa/91/79aa91c2fb118b0be550f6b3a26da1ea.jpg",
+    },
   ];
 
-  // Group testimonials into pairs for desktop/tablet
-  const testimonialPairs = [];
-  for (let i = 0; i < testimonials.length; i += 2) {
-    testimonialPairs.push(testimonials.slice(i, i + 2));
+  // Dynamically group testimonials based on screen size
+  const groupSize = isMobile ? 1 : 2;
+  const testimonialGroups = [];
+  for (let i = 0; i < testimonials.length; i += groupSize) {
+    testimonialGroups.push(testimonials.slice(i, i + groupSize));
   }
 
   return (
-    <section className="py-5 my-5" style={{ backgroundColor: '#f0fff0' }}>
+    <section className="favourites my-5" style={{ backgroundColor: "#f0fff0" }}>
       <Container>
-        <Row className="mb-5">
+        <Row className="mb-5 py-5">
           <Col>
-            <h2 className="text-center color subtext">People trust other buyers more than marketing text.</h2>
-            <p className="head fw-bold text-center color">Build trust through real user feedback</p>
+            <h2 className="text-center color subtext">
+              People trust other buyers more than marketing text.
+            </h2>
+            <p className="head fw-bold text-center color">
+              Build trust through real user feedback
+            </p>
           </Col>
         </Row>
 
         <Row className="justify-content-center">
-          <Col md={10}>
-            <Carousel activeIndex={index} onSelect={handleSelect} indicators={false} variant="dark">
-              {/* For mobile (xs): 1 per slide, for tablet (md) and desktop (lg): 2 per slide */}
-              {testimonials.map((testimonial, index) => (
-                <Carousel.Item key={testimonial.id}>
+          <Col md={12}>
+            <Carousel
+            className=''
+              activeIndex={index}
+              onSelect={handleSelect}
+              indicators={false}
+              variant="dark"
+            >
+              {testimonialGroups.map((group, groupIndex) => (
+                <Carousel.Item key={groupIndex}>
                   <Row className="justify-content-center">
-                    {/* Mobile: Show only current testimonial */}
-                    <Col xs={12} className="d-md-none mb-4">
-                      <Card className="h-100 border-0 shadow-sm">
-                        <div className="d-flex flex-column align-items-center h-100">
-                          <div className="text-center">
-                            <img
-                              src={testimonial.image}
-                              alt={testimonial.name}
-                              className="img-fluid rounded p-2 testimonial-img"
-                            />
-                          </div>
-                          <Card.Body className="text-center py-4">
-                            <Card.Text className="fst-italic mb-3">
-                              {testimonial.text}
-                            </Card.Text>
-                            <strong className="fs-5">
-                              {testimonial.name}
-                              {testimonial.location && `, ${testimonial.location}`}
-                            </strong>
-                          </Card.Body>
-                        </div>
-                      </Card>
-                    </Col>
+                    {group.map((testimonial) => (
+                      <Col
+                        key={testimonial.id}
+                        xs={12}
+                        md={6}
+                        className="mb-4 d-flex justify-content-center"
+                      >
+                        <Card
+                          className="h-100 border-0 shadow-sm"
+                          
+                        >
+                          <div className="d-flex flex-column flex-md-row align-items-center h-100">
+                            <div className="text-center">
+                              <img
+                                src={testimonial.image}
+                                alt={testimonial.name}
+                                className="img-fluid rounded testimonial-img"
 
-                    {/* Tablet & Desktop: Show 2 testimonials per slide */}
-                    <div className="d-none d-md-block">
-                      {testimonialPairs[index] && testimonialPairs[index].map((testimonialPair) => (
-                        <Col md={6} key={testimonialPair.id} className="mb-4">
-                          <Card className="h-100 border-0 shadow-sm">
-                            <div className="d-flex flex-column flex-md-row align-items-center h-100">
-                              <div className="text-center">
-                                <img
-                                  src={testimonialPair.image}
-                                  alt={testimonialPair.name}
-                                  className="img-fluid rounded testimonial-img"
-                                
-                                />
-                              </div>
-                              <Card.Body className="text-center text-md-start py-4">
-                                <Card.Text className="fst-italic mb-3">
-                                  {testimonialPair.text}
-                                </Card.Text>
-                                <strong className="fs-5">
-                                  {testimonialPair.name}
-                                  {testimonialPair.location && `, ${testimonialPair.location}`}
-                                </strong>
-                              </Card.Body>
+                              />
                             </div>
-                          </Card>
-                        </Col>
-                      ))}
-                    </div>
+                            <Card.Body className="text-center text-md-start py-4">
+                              <Card.Text className=" mb-3">
+                                {testimonial.text}
+                              </Card.Text>
+                              <strong className="fs-5">
+                                {testimonial.name}
+                                {testimonial.location &&
+                                  `, ${testimonial.location}`}
+                              </strong>
+                            </Card.Body>
+                          </div>
+                        </Card>
+                      </Col>
+                    ))}
                   </Row>
                 </Carousel.Item>
               ))}
@@ -862,6 +852,59 @@ const TestimonialsSection = () => {
     </section>
   );
 };
+
+
+const NewsletterSection = () => {
+  return (
+    <section className="py-5 my-5">
+      <Container className='final shadow-sm'>
+        <Row className="h-100 align-items-stretch">
+          {/* Image Section */}
+          <Col lg={5} className="text-center mb-4 mb-lg-0 p-0 d-flex">
+            <div className="w-100" >
+              <img
+                src="/assets/cta.jpeg"
+                alt="cta"
+                className="img-fluid w-100 cta-img "
+                style={{ objectFit: 'cover' }}
+              />
+            </div>
+          </Col>
+
+          {/* Content Section */}
+          <Col lg={7} className="p-0 d-flex">
+            <Card className="border-0 shadow-sm w-100">
+              <Card.Body
+                className="p-4 p-lg-5 d-flex flex-column justify-content-center"
+                style={{ backgroundColor: "#f0fff0" }}
+              >
+                <div className="text-center text-lg-start">
+                  {/* Heading */}
+                  <h4 className="fw-bold mb-4 color fs-2">
+                    Grow Your Own Mushrooms at Home
+                  </h4>
+
+                  <p className="text-muted mb-4 para describe">
+  Discover our best-selling mushroom grow kits — easy to use, beginner-friendly, and 100% organic. Start your home cultivation journey today! Experience the joy of harvesting fresh mushrooms
+</p>
+
+
+                  {/* CTA Button */}
+                  <div>
+                    <button className="login-btn" onClick={() => window.location.href = '/products'}>
+                      Reach out
+                    </button>
+                  </div>
+                </div>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+      </Container>
+    </section>
+  );
+};
+
 
 const Home = () => {
   return (
@@ -881,24 +924,24 @@ const Home = () => {
           </Row>
           <Row>
             <Col md={3} className="text-center mb-4">
-              <img src="../src/assets/icon1.png" className='img-size mb-3' alt="Fresh & Organic" />
-              <h5>Fresh & Organic</h5>
-              <p className="text-muted">No Chemicals, Just Nature</p>
+              <img src="/assets/icon1.png" className='img-size mb-4' alt="Fresh & Organic" />
+              <h5 className='titles'>Fresh & Organic</h5>
+              <p className="text-muted para">No Chemicals, Just Nature</p>
             </Col>
             <Col md={3} className="text-center mb-4">
-              <img src="../src/assets/icon2.png" className='img-size mb-3' alt="IoT Monitored" />
-              <h5>IoT Monitored</h5>
-              <p className="text-muted">Every Mushroom Grown Under Ideal Conditions</p>
+              <img src="/assets/icon2.png" className='img-size mb-4' alt="IoT Monitored" />
+              <h5 className='titles'>IoT Monitored</h5>
+              <p className="text-muted para">Every Mushroom Grown Under Ideal Conditions</p>
             </Col>
             <Col md={3} className="text-center mb-4">
-              <img src="../src/assets/icon3.png" className='img-size mb-3' alt="Direct to You" />
-              <h5>Direct to You</h5>
-              <p className="text-muted">Farm-to-door delivery without middlemen.</p>
+              <img src="/assets/icon3.png" className='img-size mb-4' alt="Direct to You" />
+              <h5 className='titles'>Direct to You</h5>
+              <p className="text-muted para">Farm-to-door delivery without middlemen.</p>
             </Col>
             <Col md={3} className="text-center mb-4">
-              <img src="../src/assets/icon4.png" className='img-size mb-3' alt="Easy Grow Kits" />
-              <h5>Easy Grow Kits</h5>
-              <p className="text-muted">Grow mushrooms at home in 15 days.</p>
+              <img src="/assets/icon4.png" className='img-size mb-4' alt="Easy Grow Kits" />
+              <h5 className='titles'>Easy Grow Kits</h5>
+              <p className="text-muted para">Grow mushrooms at home in 15 days.</p>
             </Col>
           </Row>
         </Container>
@@ -910,124 +953,90 @@ const Home = () => {
       <PromisesSection />
 
       {/* middle cta section */}
-<Container className="my-5 py-5" style={{ backgroundColor: '#f1fff0' }}>
-  <Row className="align-items-center text-center text-md-start">
-    {/* ✅ Text + Button Section */}
-    <Col md={8} className="mb-4 mb-md-0 text-center">
-      <img src={leafImage} className="leaf mb-3 object-fit-cover" alt="Leaf icon" style={{width:"60px",height:"60px"}}/>
-      <h2 style={{ fontWeight: 'bold', color: '#006400' }}>
-        Grow with Confidence
-      </h2>
-      <Button as={Link} to="/contact" className="button mt-3">
-        We're Here to Help
-      </Button>
-    </Col>
+      <Container className="my-5 py-5" style={{ backgroundColor: '#f1fff0' }}>
+        <Row className="align-items-center text-center text-md-start">
+          {/* ✅ Text + Button Section */}
+          <Col className="mb-4 mb-md-0 text-center">
+            <img src="/assets/leaf.png" className="leaf mb-3 object-fit-cover" alt="Leaf icon" style={{ width: "60px", height: "60px" }} />
+            <h2 style={{ fontWeight: 'bold', color: '#006400' }}>
+              Grow with Confidence
+            </h2>
+            <p className='mx-auto describes'>Discover our best-selling mushroom grow kits — easy to use, beginner-friendly, and 100% organic. Start your home cultivation journey today! Experience the joy of harvesting fresh mushrooms right from your kitchen.</p>
+            <Button as={Link} to="/contact" className="button mt-3">
+              We're Here to Help
+            </Button>
+          </Col>
 
-    {/* ✅ Image Section */}
-    <Col md={4} className="text-center text-md-end">
-      <img
-        src={mushroomImage}
-        alt="Mushrooms"
-        className="img-fluid"
-        style={{ maxHeight: '220px', objectFit: 'contain' }}
-      />
-    </Col>
-  </Row>
-</Container>
+      
+        </Row>
+      </Container>
 
       {/* Favourite Products */}
       <FavouriteProducts />
 
-    {/* 🌐 IoT Section */}
-<section className="py-5 section my-5" style={{ backgroundColor: "#f9fff9" }}>
-  <Container>
-    <Row className="align-items-center gy-5 gx-lg-5">
-      {/* 🖼️ Left Image */}
-      <Col lg={6} className="text-center">
-        <img
-          src={iotImage}
-          alt="IoT Monitoring"
-          className="img-fluid rounded shadow-sm"
-          style={{ maxHeight: "400px", objectFit: "contain" }}
-        />
-      </Col>
+      {/* 🌐 IoT Section */}
+      <section className="py-5 section my-5" >
+        <Container>
+          <Row className="align-items-center gy-5 gx-lg-5">
+            {/* 🖼️ Left Image */}
+            <Col lg={6} className="text-center">
+              <img
+                src="/assets/iot.png"
+                alt="IoT Monitoring"
+                className="img-fluid rounded w-100 iot-image"
+              />
+            </Col>
 
-      {/* 🧠 Right Content */}
-      <Col lg={6}>
-        <p className="subtext color">
-          We combine cutting edge IoT technology with natural cultivation to grow healthier, fresher mushrooms.
-        </p>
-        <h2 className="fw-bold mb-4 farm color">
-          Smart Farming Powered by IoT & Nature
-        </h2>
+            {/* 🧠 Right Content */}
+            <Col lg={6}>
+              <p className="subtext color">
+                We combine cutting edge IoT technology with natural cultivation to grow healthier, fresher mushrooms.
+              </p>
+              <h2 className="fw-bold mb-4 farm color">
+                Smart Farming Powered by IoT & Nature
+              </h2>
 
-        {/* Feature 1 */}
-        <div className="d-flex mb-4 align-items-start">
-          <img src={monitorImage} alt="24/7 Monitoring" className="img-sizes me-3" />
-          <div>
-            <h5 className="fw-semibold">24/7 Monitoring</h5>
-            <p className="mb-0">
-              Sensors track temperature, humidity, CO₂, and light to maintain perfect growth conditions.
-            </p>
-          </div>
-        </div>
+              {/* Feature 1 */}
+              <div className="d-flex mb-4 align-items-start">
+                <img src="/assets/monitor.png" alt="24/7 Monitoring" className="img-sizes me-3" />
+                <div>
+                  <h5 className="fw-semibold">24/7 Monitoring</h5>
+                  <p className="mb-0">
+                    Sensors track temperature, humidity, CO₂, and light to maintain perfect growth conditions.
+                  </p>
+                </div>
+              </div>
 
-        {/* Feature 2 */}
-        <div className="d-flex mb-4 align-items-start">
-          <img src={automateImage} alt="Automated Adjustments" className="img-sizes me-3" />
-          <div>
-            <h5 className="fw-semibold">Automated Adjustments</h5>
-            <p className="mb-0">
-              IoT systems instantly regulate climate and airflow, removing guesswork and ensuring consistency.
-            </p>
-          </div>
-        </div>
+              {/* Feature 2 */}
+              <div className="d-flex mb-4 align-items-start">
+                <img src="/assets/automate.png" alt="Automated Adjustments" className="img-sizes me-3" />
+                <div>
+                  <h5 className="fw-semibold">Automated Adjustments</h5>
+                  <p className="mb-0">
+                    IoT systems instantly regulate climate and airflow, removing guesswork and ensuring consistency.
+                  </p>
+                </div>
+              </div>
 
-        {/* Feature 3 */}
-        <div className="d-flex align-items-start">
-          <img src={growthImage} alt="Healthier Growth" className="img-sizes me-3" />
-          <div>
-            <h5 className="fw-semibold">Healthier, Faster Growth</h5>
-            <p className="mb-0">
-              Controlled environments reduce contamination risk and boost yield quality.
-            </p>
-          </div>
-        </div>
-      </Col>
-    </Row>
-  </Container>
-</section>
+              {/* Feature 3 */}
+              <div className="d-flex align-items-start">
+                <img src="/assets/growth.png" alt="Healthier Growth" className="img-sizes me-3" />
+                <div>
+                  <h5 className="fw-semibold">Healthier, Faster Growth</h5>
+                  <p className="mb-0">
+                    Controlled environments reduce contamination risk and boost yield quality.
+                  </p>
+                </div>
+              </div>
+            </Col>
+          </Row>
+        </Container>
+      </section>
 
       {/* Testimonials */}
       <TestimonialsSection />
 
-  {/* 🌿 Final CTA Section */}
-<Container className="my-5 py-5" style={{ backgroundColor: '#f0fff0' }}>
-  <Row className="align-items-center text-center text-md-start">
-    {/* ✅ Text + Button Section */}
-    <Col md={8} className="mb-4 mb-md-0">
-      <div style={{ color: '#006400', marginBottom: '10px' }}>
-        <img src={leafImage} className="leaf mb-3" alt="Leaf icon" />
-      </div>
-      <h2 style={{ fontWeight: 'bold', color: '#006400' }}>
-        Grow with Confidence
-      </h2>
-      <Button as={Link} to="/contact" className="button mt-3">
-        We're Here to Help
-      </Button>
-    </Col>
-
-    {/* ✅ Image Section */}
-    <Col md={4} className="text-center text-md-end">
-      <img
-        src={mushroomImage}
-        alt="Mushrooms"
-        className="img-fluid"
-        style={{ maxHeight: '220px', objectFit: 'contain' }}
-      />
-    </Col>
-  </Row>
-</Container>
+       <NewsletterSection/>
 
     </div>
   );

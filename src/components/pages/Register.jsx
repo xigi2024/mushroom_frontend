@@ -92,7 +92,7 @@ const Register = () => {
           {/* Image Section - col-md-4 */}
           <Col md={4} className="register-left p-0">
             <img
-              src="../src/assets/register.jpg"
+              src="/assets/register.jpg"
               alt="Register"
               className="register-img w-100 h-100 object-fit-cover"
               style={{ objectFit: 'cover', height: '100%' }}

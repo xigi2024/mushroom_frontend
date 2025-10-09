@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Spinner, Alert } from 'react-bootstrap';
 import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import '../styles/products.css';
-import contactHeroImage from '../../assets/contact.jpg';
+import contactHeroImage from '/assets/contact.jpg';
 
 const Products = () => {
   const navigate = useNavigate();
@@ -134,7 +135,7 @@ const Products = () => {
                     style={{ cursor: 'pointer' }}
                     onClick={() => handleViewProduct(category.id)}
                   >
-                    <div className="card-image-container position-relative">
+                    <div className="card-image-containers position-relative">
                       {!imageLoadErrors[category.id] && !loadedImages[category.id] && (
                         <div 
                           className="image-loading-placeholder position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-light"
@@ -207,29 +208,21 @@ const Products = () => {
       </section>
 
       {/* CTA Section */}
-      <Container className="cta-section my-5">
-        <Row className="align-items-center">
-          <Col md={8} className="text-center">
-            <img src="../src/assets/leaf.png" className="leaf mb-3" alt="Leaf icon" />
-            <h2 className="cta-title">Grow with Confidence</h2>
-            <p className="cta-text">
-            Our premium mushroom products are carefully cultivated to ensure 
-  the highest quality and yield. We help you achieve healthy growth and 
-  consistent results every season.            </p>
-            <Button 
-              className="button mt-3"
-              onClick={() => navigate('/contact')}
-            >
+      <Container className="my-5 py-5" style={{ backgroundColor: '#f1fff0' }}>
+        <Row className="align-items-center text-center text-md-start">
+          {/* ✅ Text + Button Section */}
+          <Col className="mb-4 mb-md-0 text-center">
+            <img src="/assets/leaf.png" className="leaf mb-3 object-fit-cover" alt="Leaf icon" style={{ width: "60px", height: "60px" }} />
+            <h2 style={{ fontWeight: 'bold', color: '#006400' }}>
+              Grow with Confidence
+            </h2>
+            <p className='mx-auto describes'>Discover our best-selling mushroom grow kits — easy to use, beginner-friendly, and 100% organic. Start your home cultivation journey today! Experience the joy of harvesting fresh mushrooms right from your kitchen.</p>
+            <Button as={Link} to="/contact" className="button mt-3">
               We're Here to Help
             </Button>
           </Col>
-          <Col md={4} className="text-center">
-            <img
-              src="../src/assets/mushroom.png"
-              alt="Mushrooms"
-              className="cta-image"
-            />
-          </Col>
+
+      
         </Row>
       </Container>
     </div>
