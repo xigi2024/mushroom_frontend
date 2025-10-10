@@ -121,7 +121,7 @@ function Footer() {
               marginTop: "20px"
             }}
           >
-            <p className="mb-0">
+            <p className="mb-0 text-center">
               Copyright © 2025 Mycomatrix Pvt.Ltd | Powered by{' '}
               <a href="https://xigi.in/" className="color text-decoration-none" target="_blank" rel="noopener noreferrer">
                 Xigi Tech.Pvt.Ltd.

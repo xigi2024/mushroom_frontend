@@ -404,6 +404,9 @@
     .mobile-auth-section {
         padding: 1.25rem;
     }
+    .phone{
+        width: 375px;
+      }
 }
 
 @media (max-width: 575.98px) {
@@ -425,6 +428,9 @@
         height: 40px;
         font-size: 1rem;
     }
+    .phone{
+        width: 375px;
+      }
     
     .mobile-nav-link {
         padding: 0.75rem 1rem !important;
@@ -616,7 +622,4 @@
     body {
       padding-bottom: 60px;
     }
-  }
-  .phone{
-    width: 375px;
   }
