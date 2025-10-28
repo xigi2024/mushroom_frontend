@@ -3,8 +3,10 @@
   justify-content: center;
   align-items: center;
   overflow: hidden; /* scroll completely off */
-  max-width: 1000px;
+  max-width: 1200px;
   margin:0 auto;
+  margin-top: 30px;
+  border-right: 1px solid #ddd;
 }
 
 .register-wrapper {
@@ -44,10 +46,6 @@
   justify-content: center;
 }
 
-.register-img {
-
-  border-radius: 8px;
-}
 
 .register-right {
   flex: 1;

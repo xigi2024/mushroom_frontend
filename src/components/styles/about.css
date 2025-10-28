@@ -1,6 +1,6 @@
 .about-hero-section {
   background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)),
-    url("../../assets/about.jpg") center/cover;
+    url("/assets/fresh.jpeg") center/cover;
   height: 400px;
   display: flex;
   align-items: center;
@@ -60,4 +60,7 @@
 
 .accordion-item:first-of-type>.accordion-header .accordion-button {
   font-weight: 600;
+}
+.accordion-button{
+  font-size: 22px;
 }

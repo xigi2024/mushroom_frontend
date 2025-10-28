@@ -4,136 +4,78 @@ import { Container, Row, Col, Nav, Tab, Image, Button, Accordion } from 'react-b
 import { Link } from 'react-router-dom';
 import '../styles/about.css';
 import aboutMainImage from '/assets/about-main.png';
-import leafImage from '/assets/leaf.png';
-import mushroomImage from '/assets/mushroom.png';
+
+
+const features = [
+  {
+    title: "IoT Sensors",
+    desc: "IoT sensors work continuously to monitor key environmental factors such as temperature, humidity, CO₂, and light. This smart technology brings efficiency and peace of mind to your cultivation process.",
+    image: "/assets/iot controller.jpg"
+  },
+  {
+    title: "Growth Optimization",
+    desc: "Our smart systems continuously fine-tune the growing environment, ensuring mushrooms receive the right balance of temperature, humidity, and light. This ensures mushrooms grow in the most favorable conditions at all times.",
+    image: "https://i.pinimg.com/736x/bf/99/c2/bf99c2a2665bf411e75dfb46ab85f687.jpg"
+  },
+  {
+    title: "Real-time Monitoring",
+    desc: "Real-time monitoring helps detect even the smallest changes that could affect mushroom health. Farmers receive instant alerts, enabling quick decision-making and proactive actions. This minimizes crop loss and ensures consistent quality throughout the growing cycle.",
+    image: "https://i.pinimg.com/736x/05/aa/ec/05aaec6103b53ef221e7f84a394e5416.jpg"
+  }
+];
 
 const MushroomInfo = () => {
+  const [activeIndex, setActiveIndex] = useState(0);
+
   return (
     <section className="py-5" style={{ backgroundColor: "#f1fff0" }}>
       <Container>
-        <h2 className="text-center mb-5 fw-bold color">
+        <h2 className="text-center mb-5 fw-bold head color">
           Why Our Mushrooms Stay Fresh & Pure
         </h2>
 
-        <Tab.Container defaultActiveKey="sensors">
-          <Row>
-            {/* Left Menu */}
-            <Col md={3}>
-              <Nav variant="pills" className="flex-column mb-5">
-                <Nav.Item>
-                  <Nav.Link eventKey="sensors" className="fs-5 fw-semibold titles">
-                    IoT Sensors
-                  </Nav.Link>
-                </Nav.Item>
-                <Nav.Item>
-                  <Nav.Link eventKey="controls" className="fs-5 fw-semibold titles">
-                    Growth Optimization
-                  </Nav.Link>
-                </Nav.Item>
-                <Nav.Item>
-                  <Nav.Link eventKey="monitoring" className="fs-5 fw-semibold titles">
-                    Real-time Monitoring
-                  </Nav.Link>
-                </Nav.Item>
-              </Nav>
-            </Col>
-
-            {/* Right Content */}
-            <Col md={9}>
-              <Tab.Content>
-                {/* IoT Sensors */}
-                <Tab.Pane eventKey="sensors">
-                  <Row className="align-items-center ">
-                    <Col md={6}>
-                      <Image
-                        src="https://i.pinimg.com/474x/20/0e/1d/200e1d878dc3659da532e42580c0151c.jpg"
-                        alt="IoT Sensors"
-                        fluid
-                        rounded
-                        style={{height:"380px"}}
-                        className="w-100 object-fit-cover mb-5"
-                      />
-                    </Col>
-                    <Col md={6}>
-  <h4 className="titles">IoT Sensors</h4>
-  <p className="para">
-    IoT sensors work continuously to monitor key environmental factors such as temperature, humidity, CO₂, and light.
-  </p>
-  <p className="para">
-    These sensors provide accurate, real-time data, ensuring the growing conditions are always optimal.
-  </p>
-  <p className="para">
-    With automated alerts, any fluctuations can be addressed immediately, reducing risk and improving yield.
-  </p>
-  <p className="para">
-    This smart technology brings efficiency and peace of mind to your cultivation process.
-  </p>
-</Col>
-
-                  </Row>
-                </Tab.Pane>
-
-                {/* Automated Controls */}
-                <Tab.Pane eventKey="controls">
-                  <Row className="align-items-center">
-                    <Col md={6}>
-                      <Image
-                        src="https://i.pinimg.com/736x/bf/99/c2/bf99c2a2665bf411e75dfb46ab85f687.jpg"
-                        alt="Automated Controls"
-                        fluid
-                        rounded
-                        style={{height:"380px"}}
-                        className="w-100 object-fit-cover mb-5"
-                      />
-                    </Col>
-                    <Col md={6}>
-                      <h4 className="titles">Growth Optimization</h4>
-                      <p className="para">
-                      Our smart systems continuously fine-tune the growing environment, ensuring mushrooms receive the right balance of temperature, humidity, and light. By optimizing every stage of growth, we help mushrooms develop naturally, with better texture, freshness, and nutritional value..
+        <div className="row align-items-center">
+          {/* Left: Features List */}
+          <div className="col-md-6 order-2 order-md-1">
+            <div className="space-y-4">
+              {features.map((feature, idx) => (
+                <div
+                  key={idx}
+                  className={`p-3 rounded-xl transition-all duration-300 ease-in-out flex items-start gap-4 ${
+                    activeIndex === idx ? " scale-[1.02]" : "hover:bg-gray-50"
+                  }`}
+                  onMouseEnter={() => setActiveIndex(idx)}
+                >
+                  <div className="w-16 h-16 bg-[#e8f1ff] p-2.5 rounded-lg flex-shrink-0">
+                    <div className="w-full h-full rounded bg-gray-200" />
+                  </div>
+                  <div>
+                    <h3 className="titles text-dark  mb-2">
+                      {feature.title}
+                    </h3>
+                    {activeIndex === idx && (
+                      <p className="para text-dark">
+                        {feature.desc}
                       </p>
-                      <p className="para">
-                        This ensures mushrooms grow in the most favorable
-                        conditions at all times.
-                      </p>
-                    </Col>
-                  </Row>
-                </Tab.Pane>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
 
-                {/* Real-time Monitoring */}
-                <Tab.Pane eventKey="monitoring">
-                  <Row className="align-items-center">
-                    <Col md={6}>
-                      <Image
-                        src="https://i.pinimg.com/736x/05/aa/ec/05aaec6103b53ef221e7f84a394e5416.jpg"
-                        alt="Real-time Monitoring"
-                        fluid
-                        rounded
-                        style={{height:"380px"}}
-                        className="w-100 object-fit-cover mb-5"
-                      />
-                    </Col>
-                    <Col md={6}>
-  <h4 className="titles">Real-time Monitoring</h4>
-  <p className="para">
-    Real-time monitoring helps detect even the smallest changes that could affect mushroom health.
-  </p>
-  <p className="para">
-    Farmers receive instant alerts, enabling quick decision-making and proactive actions.
-  </p>
-  <p className="para">
-    This minimizes crop loss and ensures consistent quality throughout the growing cycle.
-  </p>
-  <p className="para">
-    It also allows for data-driven insights to continuously improve growing strategies.
-  </p>
-</Col>
-
-                  </Row>
-                </Tab.Pane>
-              </Tab.Content>
-            </Col>
-          </Row>
-        </Tab.Container>
+          {/* Right: Image */}
+          <div className="col-md-6 order-1 order-md-2 mb-4 mb-md-0">
+            <div className="position-relative" style={{ height: '400px' ,objectFit:"cover"}}>
+              <Image
+                src={features[activeIndex].image}
+                alt={features[activeIndex].title}
+                className="w-100 h-100 object-cover rounded-3"
+                style={{ objectPosition: 'center',objectFit:"cover" }}
+              />
+            </div>
+          </div>
+        </div>
       </Container>
     </section>
   );
@@ -157,7 +99,7 @@ const About = () => {
               <h1 className="fs-1 fw-bold mb-4">
                 Farming Meets Technology. For Fresher, Safer Mushrooms.
               </h1>
-              <p className="lead mb-4">
+              <p className="lead text-white mb-4">
                 From our farms to your table, we ensure sustainability, innovation, 
                 and quality. Our farms are clean, safe, and full of nutrition and flavor.
               </p>
@@ -178,7 +120,7 @@ const About = () => {
               />
             </div>
             <div className="col-lg-7 ps-lg-5">
-              <h2 className="h1 mb-4 color">
+              <h2 className="h1 mb-4 color head favourite-head">
                 From a Simple Idea to a Smarter Farm
               </h2>
               <p className="mb-3 para">
@@ -269,53 +211,77 @@ const About = () => {
       <div className="container">
         <div className="text-center mb-5">
           <h2 className="h1 color mb-3">Discover Frequently Asked Questions</h2>
-          <p className="text-muted">
+          <p className="para">
           Find quick answers before you reach out to us
           </p>
         </div>
+<div className="row justify-content-center">
+  <div className="col-lg-8">
+    <Accordion defaultActiveKey="0">
+      <Accordion.Item eventKey="0">
+        <Accordion.Header className="fw-bold fs-5 titles">
+          1. How does your IoT mushroom farming work?
+        </Accordion.Header>
+        <Accordion.Body className="para">
+          Our IoT system continuously monitors temperature, humidity, CO₂ levels, and other 
+          environmental factors to ensure optimal growing conditions for mushrooms.
+        </Accordion.Body>
+      </Accordion.Item>
 
-        <div className="row justify-content-center">
-          <div className="col-lg-8">
-            <Accordion defaultActiveKey="0">
-              <Accordion.Item eventKey="0">
-                <Accordion.Header className="fw-bold fs-5 titles">
-                  1. How does your IoT mushroom farming work?
-                </Accordion.Header>
-                <Accordion.Body className="para">
-                  Our IoT system continuously monitors temperature, humidity, CO₂ levels, and other 
-                  environmental factors to ensure optimal growing conditions for mushrooms.
-                </Accordion.Body>
-              </Accordion.Item>
+      <Accordion.Item eventKey="1">
+        <Accordion.Header className="fw-bold fs-5 titles">
+          2. Are your mushrooms organic?
+        </Accordion.Header>
+        <Accordion.Body className="para">
+          Yes, all our mushrooms are grown organically without the use of harmful pesticides or chemicals.
+        </Accordion.Body>
+      </Accordion.Item>
 
-              <Accordion.Item eventKey="1">
-                <Accordion.Header className="fw-bold fs-5 titles">
-                  2. Are your mushrooms organic?
-                </Accordion.Header>
-                <Accordion.Body className="para">
-                  Yes, all our mushrooms are grown organically without the use of harmful pesticides or chemicals.
-                </Accordion.Body>
-              </Accordion.Item>
+      <Accordion.Item eventKey="2">
+      <Accordion.Header className="fw-bold fs-5 titles">
+  3. What data does your IoT system collect?
+</Accordion.Header>
+<Accordion.Body className="para">
+  Our IoT devices track essential parameters like temperature, humidity, CO₂, and light intensity. 
+  These readings are analyzed to maintain the best environment for mushroom growth.
+</Accordion.Body>
 
-              <Accordion.Item eventKey="2">
-                <Accordion.Header className="fw-bold fs-5 titles">
-                  3. Can I visit your farm?
-                </Accordion.Header>
-                <Accordion.Body className="para">
-                  We offer guided tours of our facilities. Please contact us to schedule a visit.
-                </Accordion.Body>
-              </Accordion.Item>
+      </Accordion.Item>
 
-              <Accordion.Item eventKey="3">
-                <Accordion.Header className="fw-bold fs-5 titles">
-                  4. How fresh are the mushrooms when delivered?
-                </Accordion.Header>
-                <Accordion.Body className="para">
-                  Our mushrooms are harvested and delivered within 24–48 hours to ensure maximum freshness.
-                </Accordion.Body>
-              </Accordion.Item>
-            </Accordion>
-          </div>
-        </div>
+      <Accordion.Item eventKey="3">
+        <Accordion.Header className="fw-bold fs-5 titles">
+          4. How fresh are the mushrooms when delivered?
+        </Accordion.Header>
+        <Accordion.Body className="para">
+          Our mushrooms are harvested and delivered within 24–48 hours to ensure maximum freshness.
+        </Accordion.Body>
+      </Accordion.Item>
+
+      {/* New Question - IoT Focus */}
+      <Accordion.Item eventKey="4">
+        <Accordion.Header className="fw-bold fs-5 titles">
+          5. Can I monitor my mushroom growth through the IoT system?
+        </Accordion.Header>
+        <Accordion.Body className="para">
+          Yes! With our IoT dashboard, you can track temperature, humidity, and growth status 
+          in real-time from your mobile or desktop. It helps ensure your mushrooms grow perfectly.
+        </Accordion.Body>
+      </Accordion.Item>
+
+      {/* New Question - eCommerce Focus */}
+      <Accordion.Item eventKey="5">
+        <Accordion.Header className="fw-bold fs-5 titles">
+          6. What payment and delivery options are available?
+        </Accordion.Header>
+        <Accordion.Body className="para">
+          We accept secure online payments through major cards, UPI, and wallets. 
+          Our delivery partners ensure safe, fast, and temperature-controlled delivery to your doorstep.
+        </Accordion.Body>
+      </Accordion.Item>
+    </Accordion>
+  </div>
+</div>
+
       </div>
     </section>
 
@@ -328,7 +294,7 @@ const About = () => {
             <h2 style={{ fontWeight: 'bold', color: '#006400' }}>
               Grow with Confidence
             </h2>
-            <p className='mx-auto describes'>Discover our best-selling mushroom grow kits — easy to use, beginner-friendly, and 100% organic. Start your home cultivation journey today! Experience the joy of harvesting fresh mushrooms right from your kitchen.</p>
+            <p className='mx-auto para describes'>Discover our best-selling mushroom grow kits — easy to use, beginner-friendly, and 100% organic. Start your home cultivation journey today! Experience the joy of harvesting fresh mushrooms right from your kitchen.</p>
             <Button as={Link} to="/contact" className="button mt-3">
               We're Here to Help
             </Button>

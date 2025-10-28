@@ -112,41 +112,63 @@ const ProductDetail = () => {
 
         {/* Product Section */}
         <Row className="gx-5 gy-4">
-          {/* Product Images with Carousel */}
+          {/* Product Images with Thumbnails */}
           <Col md={6}>
-            <Carousel
-              activeIndex={activeImage}
-              onSelect={(i) => setActiveImage(i)}
-              interval={3000}
-              indicators={false}
-              className="position-relative"
-            >
-              {productImages.map((img, idx) => (
-                <Carousel.Item key={idx}>
-                  <Image
-                    src={img}
-                    className="w-100 object-fit-cover"
-                    fluid
-                    rounded
-                    alt={`Slide ${idx + 1}`}
-                    style={{ height: "400px" }}
-                  />
-                </Carousel.Item>
-              ))}
-            </Carousel>
+            <div className="d-flex">
+              {/* Thumbnails - Vertical on the left */}
+              <div className="d-flex flex-column me-3" style={{ 
+                width: '80px',
+                minWidth: '80px' // Prevent width changes
+              }}>
+                {productImages.map((img, idx) => (
+                  <div 
+                    key={idx}
+                    className={`mb-2 overflow-hidden ${activeImage === idx ? "border border-success" : "border"}`}
+                    style={{ 
+                      width: "80px", 
+                      height: "80px",
+                      cursor: "pointer",
+                      borderRadius: '0.25rem',
+                      flexShrink: 0 // Prevent shrinking
+                    }}
+                    onClick={() => setActiveImage(idx)}
+                  >
+                    <img
+                      src={img}
+                      alt={`Thumbnail ${idx + 1}`}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        display: 'block'
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
 
-            {/* Thumbnails */}
-            <div className="d-flex mt-3 justify-content-center">
-              {productImages.map((img, idx) => (
-                <Image
-                  key={idx}
-                  src={img}
-                  thumbnail
-                  className={`me-2 ${activeImage === idx ? "border border-success" : ""}`}
-                  style={{ width: "80px", height: "80px", cursor: "pointer" }}
-                  onClick={() => setActiveImage(idx)}
+              {/* Main Image - Fixed dimensions container */}
+              <div className="p-0"style={{
+                flex: '1 1 auto',
+                minWidth: 0, // Prevent flex item from overflowing
+                position: 'relative',
+                height: '430px',
+              }}>
+                <img
+                  src={productImages[activeImage]}
+                  alt={`Product view ${activeImage + 1}`}
+                  className="border rounded"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    position: 'absolute',
+                    top: 0,
+                    left: 0,
+                    
+                  }}
                 />
-              ))}
+              </div>
             </div>
           </Col>
 
@@ -155,8 +177,8 @@ const ProductDetail = () => {
             <h3 className="color fs-2">{product.name}</h3>
             <div className="mb-2"><span className="text-warning">★★★★★</span></div>
             <hr className="text-gray" />
-            <h4 className="color subtext fs-4">Product Description</h4>
-            <p>{product.product_info || product.description}</p>
+            <h4 className="color subtext fs-4 favourite-head">Product Description</h4>
+            <p className="para">{product.product_info || product.description}</p>
 
             <ListGroup className="mb-3 d-flex flex-row justify-content-between align-items-center">
               {product.size && <ListGroup.Item><strong>Size:</strong> {product.size}</ListGroup.Item>}
@@ -181,11 +203,25 @@ const ProductDetail = () => {
             </div>
 
             {/* Price */}
-            <p className="mb-4"><strong>Price: </strong> ₹ {totalPrice.toFixed(2)}</p>
+            <p className="mb-4 mt-4"style={{fontSize:"24px"}}><strong>Price: </strong> ₹ {totalPrice.toFixed(2)}</p>
 
             {/* Action Buttons */}
             <div className="d-flex gap-2">
-              <Button className="me-2 button w-50" onClick={() => navigate("/checkout")}>Buy Now</Button>
+<Button
+  className="me-2 button w-50"
+  onClick={() =>
+    navigate("/checkout", {
+      state: {
+        product: product.name,
+        price: parseFloat(product.price),
+        quantity: quantity,
+        total: totalPrice
+      }
+    })
+  }
+>
+  Buy Now
+</Button>
               <Button variant="outline-secondary w-50" onClick={() => navigate("/cart")}>Add to Cart</Button>
             </div>
           </Col>
@@ -194,13 +230,13 @@ const ProductDetail = () => {
         {/* Product Information */}
         <Row className="mt-5">
           <Col>
-            <h5 className="color fs-4">Product Information</h5>
-            <p>{product.product_info || product.description}</p>
+            <h5 className="color fw-semibold fs-4">Product Information</h5>
+            <p className="para">{product.product_info || product.description}</p>
 
             {product.carbohydrates || product.protein || product.calories ? (
               <>
-                <h6 className="color fs-5">Nutritional Information</h6>
-                <ul>
+                <h6 className="color fw-semibold fs-5">Nutritional Information</h6>
+                <ul className="para">
                   {product.carbohydrates && <li>Total Carbohydrates: {product.carbohydrates}</li>}
                   {product.protein && <li>Protein: {product.protein}</li>}
                   {product.calories && <li>Calories: {product.calories}</li>}
@@ -210,61 +246,127 @@ const ProductDetail = () => {
 
             {product.shelf_life && (
               <>
-                <h6 className="color fs-5">Shelf Life</h6>
-                <p>{product.shelf_life}</p>
+                <h6 className="color fw-semibold fs-5">Shelf Life</h6>
+                <p className="para">{product.shelf_life}</p>
               </>
             )}
 
             {product.storage_info && (
               <>
-                <h6 className="color fs-5">Storage Tip</h6>
-                <p>{product.storage_info}</p>
+                <h6 className="color fw-semibold fs-5">Storage Tip</h6>
+                <p className="para">{product.storage_info}</p>
               </>
             )}
 
             {product.disclaimer && (
               <>
-                <h6 className="color fs-5">Disclaimer</h6>
-                <p>{product.disclaimer}</p>
+                <h6 className="color fw-semibold fs-5">Disclaimer</h6>
+                <p className="para">{product.disclaimer}</p>
               </>
             )}
           </Col>
         </Row>
       </Container>
 
-      {/* Other Products */}
-      {relatedProducts.length > 0 && (
-        <div className="py-5 other-products" style={{ backgroundColor: "#F1FFF0", marginTop: "3rem" }}>
-          <Container className="py-5">
-            <Row>
-              <Col><h4 className="text-center mb-4">Other Products from {category.name}</h4></Col>
-            </Row>
-            <Row>
-              {relatedProducts.slice(0, 4).map((relatedProduct) => (
-                <Col key={relatedProduct.id} md={3}>
-                  <Card className="mb-3">
-                    <Card.Img 
-                      variant="top" 
-                      src={relatedProduct.image || 'https://via.placeholder.com/300x200/28a745/ffffff?text=Mushroom'} 
-                      style={{ height: "200px", objectFit: "cover" }} 
-                    />
-                    <Card.Body className="text-center">
-                      <Card.Title>{relatedProduct.name}</Card.Title>
-                      <Card.Text>₹ {relatedProduct.price}</Card.Text>
-                      <Button
-                        className="button w-100"
-                        onClick={() => navigate(`/product/${category.id}/${relatedProduct.id}`)}
-                      >
-                        View Details
-                      </Button>
-                    </Card.Body>
-                  </Card>
-                </Col>
-              ))}
-            </Row>
-          </Container>
-        </div>
-      )}
+{/* 🟢 Other Products Section */}
+{relatedProducts.length > 0 && (
+  <div className="py-5 other-products" style={{ backgroundColor: "#F1FFF0", marginTop: "3rem" }}>
+    <Container className="py-5">
+      <Row>
+        <Col>
+          <h4 className="text-center mb-4">
+            Other Products from {category.name}
+          </h4>
+        </Col>
+      </Row>
+
+      <Row className="g-4 mt-3">
+        {relatedProducts.slice(0, 4).map((product) => (
+          <Col key={product.id} md={6} lg={3}>
+            <Card
+              className="h-100 border-0 shadow-sm product-card"
+              style={{ transition: "transform 0.2s", cursor: "pointer" }}
+              onClick={() => navigate(`/product/${category.id}/${product.id}`)}
+            >
+              {/* 🖼 Image Section */}
+              <div className="overflow-hidden position-relative" style={{ height: "200px" }}>
+                <Card.Img
+                  variant="top"
+                  src={
+                    product.image ||
+                    product.images?.[0]?.image ||
+                    "https://via.placeholder.com/300x200/28a745/ffffff?text=Mushroom"
+                  }
+                  alt={product.name}
+                  className="w-100 h-100"
+                  style={{ objectFit: "cover", transition: "transform 0.3s" }}
+                />
+              </div>
+
+              {/* 🟢 Card Body */}
+              <Card.Body className="d-flex flex-column p-3">
+                <Card.Title
+                  className="mb-1 titles"
+                  style={{ fontSize: "1.1rem" }}
+                >
+                  {product.name}
+                </Card.Title>
+
+                {/* Ratings and Reviews */}
+                <div className="d-flex align-items-center mb-2">
+                  <div className="d-flex align-items-center me-2">
+                    <span className="text-warning">
+                      {[...Array(5)].map((_, i) => (
+                        <i 
+                          key={i} 
+                          className={`fas fa-star${i < Math.floor(product.rating || 0) ? ' text-warning' : '-o'}`}
+                          style={{ fontSize: '0.8rem' }}
+                        />
+                      ))}
+                    </span>
+                    <span className="text-muted small ms-1">
+                      ({product.rating ? parseFloat(product.rating).toFixed(1) : '0.0'})
+                    </span>
+                  </div>
+                  <span className="text-muted small">
+                    {product.review || 0} reviews
+                  </span>
+                </div>
+
+                {product.description && (
+                  <Card.Text className="carousel-text mb-3 flex-grow-1">
+                    {product.description.length > 80
+                      ? product.description.slice(0, 80) + "..."
+                      : product.description}
+                  </Card.Text>
+                )}
+
+                <div className="mt-auto">
+                  <div className="d-flex justify-content-between align-items-center mb-2">
+                    <span className="fw-bold color fs-5">
+                      ₹{parseFloat(product.price).toFixed(2)}
+                    </span>
+                   
+                  </div>
+                  <Button
+                    className="w-100 button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate(`/product/${category.id}/${product.id}`);
+                    }}
+                  >
+                    View Details
+                  </Button>
+                </div>
+              </Card.Body>
+            </Card>
+          </Col>
+        ))}
+      </Row>
+    </Container>
+  </div>
+)}
+
     </>
   );
 };

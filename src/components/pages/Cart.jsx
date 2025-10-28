@@ -1,7 +1,7 @@
-// Cart.js
+// Cart.js - TRASH ICON ONLY FOR REMOVE
 import React, { useEffect } from 'react';
 import { Container, Row, Col, Card, Button, Table, Image, Spinner, Alert } from 'react-bootstrap';
-import { FaShoppingBag, FaSignInAlt, FaExclamationTriangle } from 'react-icons/fa';
+import { FaShoppingBag, FaSignInAlt, FaExclamationTriangle, FaTrash, FaMinus, FaPlus } from 'react-icons/fa';
 import { useCart } from '../../context/CartContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -26,14 +26,6 @@ const Cart = () => {
       fetchCart();
     }
   }, [isAuthenticated, fetchCart]);
-
-  // Remove debug logs after confirming fix works
-  // useEffect(() => {
-  //   console.log('Cart component - Current cart data:', cart);
-  //   console.log('Cart items:', cart?.items);
-  //   console.log('Total items:', getTotalItems());
-  //   console.log('Total price:', getTotalPrice());
-  // }, [cart]);
 
   if (loading) {
     return (
@@ -71,9 +63,8 @@ const Cart = () => {
               </Button>
             )}
             <Button 
-              variant="outline-secondary"
               onClick={() => navigate('/products')}
-              className="d-flex align-items-center justify-content-center"
+              className="d-flex align-items-center justify-content-center bg-white text-dark border"
               style={{ minWidth: '150px' }}
             >
               <FaShoppingBag className="me-2" /> Continue Shopping
@@ -108,7 +99,7 @@ const Cart = () => {
   };
 
   const subtotal = getTotalPrice();
-  const total = subtotal; // Total is same as subtotal (no tax)
+  const total = subtotal;
 
   return (
     <Container className="my-5">
@@ -143,8 +134,9 @@ const Cart = () => {
                     <tr key={item.id || `${product.id}_${Date.now()}`}>
                       <td>
                         <div className="d-flex align-items-center">
+                          {/* ✅ FIXED: Both use same URL format */}
                           <div 
-                            onClick={() => navigate(`/product/${product.id}`)}
+                            onClick={() => navigate(`/product/${product.category}/${product.id}`)}
                             style={{ cursor: 'pointer' }}
                           >
                             <Image
@@ -159,9 +151,10 @@ const Cart = () => {
                             />
                           </div>
                           <div>
+                            {/* ✅ FIXED: Same URL format as image */}
                             <div 
                               className="fw-semibold" 
-                              onClick={() => navigate(`/product/${product.id}`)}
+                              onClick={() => navigate(`/product/${product.category}/${product.id}`)}
                               style={{ cursor: 'pointer' }}
                             >
                               {product.name || 'Unknown Product'}
@@ -182,16 +175,20 @@ const Cart = () => {
                             size="sm"
                             onClick={() => handleQuantityUpdate(item.id, quantity - 1)}
                             disabled={quantity <= 1}
+                            className="d-flex align-items-center justify-content-center"
+                            style={{ width: '35px', height: '35px' }}
                           >
-                            -
+                            <FaMinus size={12} />
                           </Button>
                           <span className="mx-3 fw-semibold">{quantity}</span>
                           <Button
                             variant="outline-secondary"
                             size="sm"
                             onClick={() => handleQuantityUpdate(item.id, quantity + 1)}
+                            className="d-flex align-items-center justify-content-center"
+                            style={{ width: '35px', height: '35px' }}
                           >
-                            +
+                            <FaPlus size={12} />
                           </Button>
                         </div>
                       </td>
@@ -199,13 +196,31 @@ const Cart = () => {
                         <strong>₹{calculateItemTotal(item)}</strong>
                       </td>
                       <td className="align-middle">
-                        <Button
-                          variant="outline-danger"
-                          size="sm"
+                        {/* ✅ TRASH ICON ONLY - NO BUTTON */}
+                        <div 
+                          className="text-danger cursor-pointer"
                           onClick={() => handleRemoveItem(item.id)}
+                          title="Remove item"
+                          style={{ 
+                            cursor: 'pointer',
+                            padding: '8px',
+                            borderRadius: '4px',
+                            transition: 'all 0.2s ease',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}
+                          onMouseEnter={(e) => {
+                            e.target.style.backgroundColor = '#f8d7da';
+                            e.target.style.transform = 'scale(1.1)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.target.style.backgroundColor = 'transparent';
+                            e.target.style.transform = 'scale(1)';
+                          }}
                         >
-                          Remove
-                        </Button>
+                          <FaTrash size={16} />
+                        </div>
                       </td>
                     </tr>
                   );
@@ -216,22 +231,25 @@ const Cart = () => {
 
           <div className="d-flex justify-content-between">
             <Button 
-              variant="outline-secondary" 
+              className='border bg-white text-dark d-flex align-items-center'
               onClick={() => navigate('/products')}
             >
+              <FaShoppingBag className="me-2" />
               Continue Shopping
             </Button>
             <Button 
               variant="outline-danger" 
               onClick={handleClearCart}
+              className="d-flex align-items-center"
             >
+              <FaTrash className="me-2" />
               Clear Cart
             </Button>
           </div>
         </Col>
 
         {/* Order Summary */}
-        <Col md={4}>
+        <Col md={4} className='pt-3'>
           <Card className="p-4">
             <h4 className="mb-4">Order Summary</h4>
 
@@ -246,16 +264,23 @@ const Cart = () => {
             </div>
 
             <Button 
-              className="w-100 mb-3 button" 
-              onClick={() => navigate('/checkout')}
+              className="w-100 my-3 button" 
+              onClick={() => navigate('/checkout', { 
+                state: { 
+                  fromCart: true,
+                  cartTotal: getTotalPrice(),
+                  itemCount: getTotalItems()
+                }
+              })}
             >
               Proceed to Checkout
             </Button>
 
             <Button 
-              className="w-100 border text-center py-2 rounded cursor-pointer"
+              className="w-100 border bg-white text-dark center py-2 rounded cursor-pointer d-flex align-items-center justify-content-center"
               onClick={() => navigate('/products')}
             >
+              <FaShoppingBag className="me-2" />
               Continue Shopping
             </Button>
 
@@ -264,7 +289,7 @@ const Cart = () => {
               <div className="mt-4">
                 <Alert variant="warning" className="mb-3">
                   <div className="d-flex align-items-center">
-                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                    <FaExclamationTriangle className="me-2" />
                     <div>
                       <h6 className="alert-heading mb-1">Guest User</h6>
                       <p className="mb-0">Please login to save your cart and access it from any device.</p>
@@ -272,10 +297,10 @@ const Cart = () => {
                   </div>
                 </Alert>
                 <Button 
-                  className="w-100 mb-3 button"
+                  className="w-100 mb-3 button d-flex align-items-center justify-content-center"
                   onClick={() => navigate('/login', { state: { from: '/cart' } })}
                 >
-                  <i className="bi bi-box-arrow-in-right me-2"></i>
+                  <FaSignInAlt className="me-2" />
                   Login to Save Your Cart
                 </Button>
                 <div className="text-center text-muted small">

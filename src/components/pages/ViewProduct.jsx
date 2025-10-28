@@ -20,7 +20,7 @@ const ViewProduct = () => {
         setLoading(true);
         
         // Fetch all categories and find the one with matching ID
-        const categoryResponse = await fetch('https://mycomatrix.in/api/category/');
+        const categoryResponse = await fetch('http://127.0.0.1:8000/api/category/');
         if (!categoryResponse.ok) {
           throw new Error('Failed to fetch categories');
         }
@@ -34,7 +34,7 @@ const ViewProduct = () => {
         setCategory(foundCategory);
         
         // Fetch products for this category
-        const productsResponse = await fetch('https://mycomatrix.in/api/products/');
+        const productsResponse = await fetch('http://127.0.0.1:8000/api/products/');
         if (!productsResponse.ok) {
           throw new Error('Failed to fetch products');
         }
@@ -115,7 +115,7 @@ const ViewProduct = () => {
               <h1 className="fs-1 fw-bold mb-4">
                 Farming Meets Technology – For Fresher, Safer Mushrooms.
               </h1>
-              <p className="lead mb-4">
+              <p className="lead text-white mb-4">
                 From our farms to your table, we ensure sustainability, innovation, 
                 and quality. Our farms are clean, safe, and full of nutrition and flavor.
               </p>
@@ -135,9 +135,17 @@ const ViewProduct = () => {
         <Row>
           {/* Filter Sidebar */}
           <Col md={3} className="mb-4">
-            <Card className="border-0 shadow-sm filter-sidebar">
-              <Card.Header className="bg-white border-bottom">
-                <h5 className="mb-0 text-start fw-bold color">Filters</h5>
+            <Card className="border shadow-sm p-3 filter-sidebar" style={{
+              backgroundColor: "#f1fff0",
+              position: "sticky",
+              top: "100px",
+              maxHeight: "calc(100vh - 150px)",
+              overflowY: "auto",
+              zIndex: 10,
+              alignSelf: "flex-start"
+            }}>
+              <Card.Header className="border-bottom" style={{backgroundColor:"#f1fff0"}}>
+                <h5 className="mb-0 text-start fw-bold color" >Filters</h5>
               </Card.Header>
               <Card.Body className="p-4">
                 {/* Price Range Filter */}
@@ -210,7 +218,7 @@ const ViewProduct = () => {
                             {filters.priceRange === 'over2000' && 'Over ₹2000'}
                             <button 
                               type="button" 
-                              className="btn-close btn-close-white ms-2" 
+                              className="btn-close 20112521btn-close-white ms-2" 
                               style={{ fontSize: '0.6rem' }}
                               onClick={() => setFilters({...filters, priceRange: ''})}
                               aria-label="Remove"
@@ -239,14 +247,14 @@ const ViewProduct = () => {
           </Col>
 
           {/* Products Grid */}
-          <Col md={9}>
+          <Col md={9} className='border rounded p-4'>
             <div className="mb-4">
               <h2 className="fw-semibold text-dark mb-2">Our {category.name} Collection</h2>
               <hr />
-              <p className="lead text-muted mb-4">{category.description || 'Explore our premium selection of mushroom products.'}</p>
+              <p className="lead para mb-4">{category.description || 'Explore our premium selection of mushroom products.'}</p>
             </div>
             
-            <Row className="g-4">
+            <Row className="g-4 mt-3">
               {filteredProducts.length > 0 ? (
                 filteredProducts.map((product) => (
                   <Col key={product.id} md={6} lg={4}>
@@ -263,26 +271,51 @@ const ViewProduct = () => {
   className="w-100 h-100"
   style={{ objectFit: 'cover', transition: 'transform 0.3s' }}
 />
-                        {(!product.stock || product.stock <= 0) && (
-                          <Badge 
-                            bg="danger" 
-                            className="position-absolute top-0 end-0 m-2"
-                            style={{ fontSize: '0.7rem' }}
-                          >
-                            Out of Stock
-                          </Badge>
-                        )}
+                      
                       </div>
                       <Card.Body className="d-flex flex-column p-3">
-                        <Card.Title className="mb-2 fw-bold" style={{ fontSize: '1.1rem' }}>
+                        <Card.Title className="mb-1 titles" style={{ fontSize: '1.1rem' }}>
                           {product.name}
                         </Card.Title>
-                        <Card.Text className="text-muted small mb-3 flex-grow-1">
+                        
+                        {/* Ratings and Reviews */}
+                        <div className="d-flex align-items-center mb-2">
+                          <div className="d-flex align-items-center me-2">
+                            <span className="text-warning me-1">
+                              {[...Array(5)].map((_, i) => (
+                                <i 
+                                  key={i} 
+                                  className={`fas fa-star${i < Math.floor(product.rating || 0) ? ' text-warning' : '-o'}`}
+                                  style={{ fontSize: '0.9rem' }}
+                                />
+                              ))}
+                            </span>
+                            <span className="text-muted small">
+                              ({product.rating ? parseFloat(product.rating).toFixed(1) : '0.0'})
+                            </span>
+                          </div>
+                          <span className="text-muted small">
+                            {product.review || 0} reviews
+                          </span>
+                        </div>
+
+                        <Card.Text className="para mb-3 flex-grow-1">
                           {product.description}
                         </Card.Text>
+                        
                         <div className="mt-auto d-flex justify-content-between align-items-center">
-                          <span className="fw-bold text-muted fs-5">₹{product.price}</span>
+                          <span className="fw-bold color fs-5">₹{product.price}</span>
+                        
                         </div>
+                          <Button 
+                          className='button mt-3'
+                           
+                            onClick={(e) => {
+                              e.stopPropagation();
+                            }}
+                          >
+                            Add to Cart
+                          </Button>
                       </Card.Body>
                     </Card>
                   </Col>                
@@ -309,24 +342,22 @@ const ViewProduct = () => {
         </Row>
       </Container>
 
-      <Container className="my-5" style={{ backgroundColor: '#f1fff0', padding: '60px 0' }}>
-        <Row className="align-items-center">
-          <Col md={8} className="text-center text-md-center">
-            <img src="../src/assets/leaf.png" className='leaf mb-3' alt="Leaf icon" />
+      {/* middle cta section */}
+      <Container className="my-5 py-5" style={{ backgroundColor: '#f1fff0' }}>
+        <Row className="align-items-center text-center text-md-start">
+          {/* ✅ Text + Button Section */}
+          <Col className="mb-4 mb-md-0 text-center">
+            <img src="/assets/leaf.png" className="leaf mb-3 object-fit-cover" alt="Leaf icon" style={{ width: "60px", height: "60px" }} />
             <h2 style={{ fontWeight: 'bold', color: '#006400' }}>
               Grow with Confidence
             </h2>
+            <p className='mx-auto describes para'>Discover our best selling mushroom grow kits -easy to use, beginner-friendly, and 100% organic. Start your home cultivation journey today! Experience the joy of harvesting fresh mushrooms right from your kitchen.</p>
             <Button as={Link} to="/contact" className="button mt-3">
               We're Here to Help
             </Button>
           </Col>
-          <Col md={4} className="text-start">
-            <img
-              src="../src/assets/mushroom.png"
-              alt="Mushrooms"
-              style={{ height: "200px", objectFit: 'cover' }}
-            />
-          </Col>
+
+      
         </Row>
       </Container>
 

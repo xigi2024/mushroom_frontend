@@ -46,7 +46,10 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) { alert('Please fix the form errors'); return; }
+    if (!validateForm()) { 
+      alert('Please fix the form errors'); 
+      return; 
+    }
 
     setIsSubmitting(true);
 
@@ -94,7 +97,7 @@ const Register = () => {
             <img
               src="/assets/register.jpg"
               alt="Register"
-              className="register-img w-100 h-100 object-fit-cover"
+              className="register-img w-100 h-100  object-fit-cover"
               style={{ objectFit: 'cover', height: '100%' }}
             />
           </Col>
@@ -107,10 +110,19 @@ const Register = () => {
               </div>
             )}
 
+            {/* Welcome Section */}
+            <div className="text-center mb-4">
+              <h2 className="titles">Create an account</h2>
+              <p className="para text-muted">
+                Join us today and start your journey with MycoMatrix
+              </p>
+            </div>
+
             <form onSubmit={handleSubmit} encType="multipart/form-data">
-              {/* First & Last Name */}
+              {/* Rest of your form remains exactly the same */}
               <Row>
                 <Col md={6}>
+                  {/* First Name Field */}
                   <div className="form-group">
                     <label>First name</label>
                     <div className="input-with-icon">
@@ -130,6 +142,7 @@ const Register = () => {
                 </Col>
 
                 <Col md={6}>
+                  {/* Last Name Field */}
                   <div className="form-group">
                     <label>Last name</label>
                     <div className="input-with-icon">

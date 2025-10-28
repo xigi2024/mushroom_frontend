@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { Link } from 'react-router-dom';
 import '../styles/products.css';
 import contactHeroImage from '/assets/contact.jpg';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faLink } from '@fortawesome/free-solid-svg-icons';
 
 const Products = () => {
   const navigate = useNavigate();
@@ -17,7 +19,7 @@ const Products = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch('https://mycomatrix.in/api/category/');
+        const response = await fetch('http://127.0.0.1:8000/api/category/');
         if (!response.ok) {
           throw new Error('Failed to fetch categories');
         }
@@ -54,7 +56,7 @@ const Products = () => {
     }
     
     if (category.image) {
-      const baseUrl = 'https://mycomatrix.in';
+      const baseUrl = 'http://127.0.0.1:8000';
       const imagePath = category.image.startsWith('/') ? category.image : `/${category.image}`;
       return `${baseUrl}${imagePath}`;
     }
@@ -105,109 +107,125 @@ const Products = () => {
       >
         <div className="container">
           <h1 className="hero-title">Our Products</h1>
-          <p className="hero-subtitle">
+          <p className="hero-subtitle text-white">
             Discover our premium mushroom growing solutions - from beginner kits to advanced IoT systems.
           </p>
         </div>
       </div>
       {/* Products Section */}
       <section className="products-section">
-        <Container>
-          <nav aria-label="breadcrumb">
-            <ol className="breadcrumb">
-              <li className="breadcrumb-item">
-                <a className="text-decoration-none fw-bold color" href="/">
-                  Home
-                </a>
-              </li>
-              <li className="breadcrumb-item active text-decoration-none color" aria-current="page">
-                Products
-              </li>
-            </ol>
-          </nav>
-          <h2 className="section-title text-center fw-bold mb-5">Our Mushroom Growing Solutions</h2>
-          {categories.length > 0 ? (
-            <Row className="g-4">
-              {categories.map((category) => (
-                <Col key={category.id} xs={12} sm={6} lg={4} xl={3}>
-                  <Card 
-                    className="category-card h-100 border-0 shadow-sm"
-                    style={{ cursor: 'pointer' }}
-                    onClick={() => handleViewProduct(category.id)}
-                  >
-                    <div className="card-image-containers position-relative">
-                      {!imageLoadErrors[category.id] && !loadedImages[category.id] && (
-                        <div 
-                          className="image-loading-placeholder position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-light"
-                          style={{ minHeight: '200px', zIndex: 1 }}
-                        >
-                          <Spinner animation="border" size="sm" variant="success" />
-                        </div>
-                      )}
-                      
-                      <Card.Img
-                        variant="top"
-                        src={getImageSrc(category)}
-                        alt={category.name}
-                        className="category-image"
-                        onLoad={(e) => {
-                          setLoadedImages((prev) => ({
-                            ...prev,
-                            [category.id]: true
-                           }));
-                          e.target.style.opacity = 1;
-                        }}
-                        onError={() => handleImageError(category.id)}
-                        data-category-id={category.id}
-                        style={{
-                          width: '100%',
-                          height: '250px',
-                          objectFit: 'cover',
-                          borderTopLeftRadius: '10px',
-                          borderTopRightRadius: '10px',
-                          opacity: loadedImages[category.id] ? 1 : 0,
-                          transition: 'opacity 0.5s ease'
-                        }}
-                      />
-                    </div>
-                    <Card.Body className="d-flex flex-column">
-                      <Card.Title className="category-name mb-3">{category.name}</Card.Title>
-                      {category.description && (
-                        <Card.Text className="category-description">
-                          {category.description}
-                        </Card.Text>
-                      )}
-                      <div 
-                        className="mt-auto d-flex justify-content-between align-items-center"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <span className="badge bg-light text-dark">View Products</span>
-                        <Button 
-                          className="button"
-                          size="sm"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleViewProduct(category.id);
-                          }}
-                        >
-                          View All
-                        </Button>
-                      </div>
-                    </Card.Body>
-                  </Card>
-                </Col>
-              ))}
-            </Row>
-          ) : (
-            <div className="text-center py-5">
-              <h4 className="text-muted">No categories available</h4>
-              <p className="text-muted">Please check back later for our product offerings.</p>
-            </div>
-          )}
-        </Container>
-      </section>
+  <Container>
+  <nav aria-label="breadcrumb">
+  <ol className="breadcrumb mb-4">
+    <li className="breadcrumb-item">
+      <a href="/" className="text-decoration-none fw-bold color">
+        Home
+      </a>
+    </li>
+    <li className="breadcrumb-item active fw-bold text-decoration-none color" aria-current="page">
+      Products
+    </li>
+  </ol>
+</nav>
 
-      {/* CTA Section */}
+    
+    <h2 className="section-title text-center fw-bold mb-5">Our Mushroom Growing Solutions</h2>
+    
+    {categories.length > 0 ? (
+      <Row className="g-4">
+        {categories.map((category) => (
+          <Col key={category.id} xs={12} sm={6} md={6} lg={4} xl={3}>            <Card 
+              className="category-card h-100 border-0 shadow-sm"
+              style={{ cursor: 'pointer' }}
+              onClick={() => handleViewProduct(category.id)}
+            >
+              <div className="card-image-containers position-relative">
+                {!imageLoadErrors[category.id] && !loadedImages[category.id] && (
+                  <div 
+                    className="image-loading-placeholder position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-light"
+                    style={{ minHeight: '200px', zIndex: 1 }}
+                  >
+                    <Spinner animation="border" size="sm" variant="success" />
+                  </div>
+                )}
+                
+                <Card.Img
+                  variant="top"
+                  src={getImageSrc(category)}
+                  alt={category.name}
+                  className="category-image"
+                  onLoad={(e) => {
+                    setLoadedImages((prev) => ({
+                      ...prev,
+                      [category.id]: true
+                    }));
+                    e.target.style.opacity = 1;
+                  }}
+                  onError={() => handleImageError(category.id)}
+                  data-category-id={category.id}
+                  style={{
+                    width: '100%',
+                    height: '250px',
+                    objectFit: 'cover',
+                    borderTopLeftRadius: '10px',
+                    borderTopRightRadius: '10px',
+                    opacity: loadedImages[category.id] ? 1 : 0,
+                    transition: 'opacity 0.5s ease'
+                  }}
+                />
+              </div>
+              
+              {/* Content Section - Updated structure */}
+              <Card.Body className="d-flex flex-column p-3 ">
+                {/* Title */}
+                <Card.Title className="h4 fw-semibold mb-3 card-title h5" >
+                  {category.name}
+                </Card.Title>
+
+                {/* Description */}
+                {category.description && (
+                <Card.Text className="para  flex-fill mb-3" >
+                    {category.description}
+                  </Card.Text>
+                )}
+
+                {/* Learn More button with icon */}
+                <div 
+                  className="d-flex align-items-center text-primary font-medium hover-text-primary transition-colors duration-200"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <FontAwesomeIcon 
+                    icon={faLink} 
+                    className="me-2 p-2 rounded link-icon bg-opacity-15 color" 
+                    style={{ fontSize: '12px', width: '16px', height: '16px' }}
+                  />                      
+                  <span 
+                    className="fs-6 fw-semibold color"
+                    style={{ fontFamily: 'Poppins, sans-serif' }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleViewProduct(category.id);
+                    }}
+                  >
+                    Learn More
+                  </span>
+                </div>
+              </Card.Body>
+            </Card>
+          </Col>
+        ))}
+      </Row>
+    ) : (
+      <div className="text-center py-5">
+        <h4 className="text-muted">No categories available</h4>
+        <p className="text-muted">Please check back later for our product offerings.</p>
+      </div>
+    )}
+  </Container>
+</section>
+
+
+      {/* middle cta section */}
       <Container className="my-5 py-5" style={{ backgroundColor: '#f1fff0' }}>
         <Row className="align-items-center text-center text-md-start">
           {/* ✅ Text + Button Section */}

@@ -133,24 +133,41 @@ const Header = () => {
                   </Dropdown.Menu>
                 </Dropdown>
               ) : (
-                <>
-                  <Link to="/login" className="login-btn text-decoration-none">Login</Link>
-                  <Link to="/register" className="signup-btn text-decoration-none">Sign Up</Link>
-                </>
+                <Link to="/login" className="button text-decoration-none">Login / Signup</Link>
               )}
             </div>
           </div>
 
-          {/* Mobile: Cart Icon Only */}
-          <Link to="/cart" className="d-lg-none position-relative text-dark cart-icon" style={{ textDecoration: 'none' }}>
-            <ShoppingCart size={22} />
-            {cartItemsCount > 0 && (
-              <span className="badges">
-                {Math.min(cartItemsCount, 99)}
-                {cartItemsCount > 99 && '+'}
-              </span>
+          {/* Mobile: User Avatar or Login Button */}
+          <div className="d-lg-none">
+            {isAuthenticated ? (
+              <Dropdown align="end" className="d-flex align-items-center">
+                <Dropdown.Toggle 
+                  variant="light" 
+                  id="mobile-user-dropdown" 
+                  className="border-0 bg-transparent d-flex align-items-center p-0 user-toggle"
+                >
+                  <div className="user-avatar">
+                    <span className="user-initial">{getUserInitial()}</span>
+                  </div>
+                </Dropdown.Toggle>
+
+                <Dropdown.Menu className="user-dropdown-menu">
+                  <Dropdown.Item as={Link} to="/user-dashboard" className="dropdown-item-custom">
+                    <i className="fas fa-tachometer-alt me-2"></i>
+                    Dashboard
+                  </Dropdown.Item>
+                  <Dropdown.Divider />
+                  <Dropdown.Item onClick={handleLogout} className="dropdown-item-custom text-danger">
+                    <i className="fas fa-sign-out-alt me-2"></i>
+                    Logout
+                  </Dropdown.Item>
+                </Dropdown.Menu>
+              </Dropdown>
+            ) : (
+              <Link to="/login" className="button text-decoration-none">Login / Signup</Link>
             )}
-          </Link>
+          </div>
         </Container>
       </BSNavbar>
 
@@ -188,68 +205,23 @@ const Header = () => {
           <Phone size={22} />
         </Link>
         
-        <div 
-          className={`nav-icon ${window.location.pathname.includes('/user-dashboard') || window.location.pathname.includes('/login') ? 'active' : ''}`}
-          onClick={() => setShowMobileAuth(!showMobileAuth)}
-          data-label="Account"
+        {/* Cart icon in the last position */}
+        <Link 
+          to="/cart" 
+          className={`nav-icon ${window.location.pathname === '/cart' ? 'active' : ''}`}
+          data-label="Cart"
         >
-          <User size={22} />
-        </div>
-      </div>
-
-      {/* Mobile Auth Popup */}
-      {showMobileAuth && (
-        <div className="mobile-auth-popup">
-          <div className="popup-overlay" onClick={() => setShowMobileAuth(false)}></div>
-          <div className="popup-content">
-            {isAuthenticated ? (
-              <>
-                <div className="user-info-popup">
-                  <div className="user-avatar-popup">
-                    <span>{getUserInitial()}</span>
-                  </div>
-                  <div>
-                    <div className="user-name">{user?.name || 'User'}</div>
-                    <div className="user-email">{user?.email}</div>
-                  </div>
-                </div>
-                <Link 
-                  to="/user-dashboard" 
-                  className="popup-item"
-                  onClick={() => setShowMobileAuth(false)}
-                >
-                  <LayoutDashboard size={18} />
-                  Dashboard
-                </Link>
-                <div className="popup-item text-danger" onClick={handleLogout}>
-                  <LogOut size={18} />
-                  Logout
-                </div>
-              </>
-            ) : (
-              <>
-                <Link 
-                  to="/login" 
-                  className="popup-item"
-                  onClick={() => setShowMobileAuth(false)}
-                >
-                  Login
-                </Link>
-                <Link 
-                  to="/register" 
-                  className="popup-item"
-                  onClick={() => setShowMobileAuth(false)}
-                >
-                  Sign Up
-                </Link>
-              </>
+          <div className="position-relative">
+            <ShoppingCart size={22} />
+            {cartItemsCount > 0 && (
+              <span className="mobile-cart-badge">
+                {Math.min(cartItemsCount, 99)}
+                {cartItemsCount > 99 && '+'}
+              </span>
             )}
-            <div className="popup-close" onClick={() => setShowMobileAuth(false)}>
-              Close
-            </div>
           </div>
-        </div>
-      )}
+        </Link>
+      </div>
     </>
   );
 };

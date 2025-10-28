@@ -5,6 +5,8 @@
     background: #fff;
     border-radius: 12px;
     overflow: hidden;
+    max-width: 1200px;
+    margin: 0 auto;
   }
   .login-left {
     background-color: #f8f9fa;

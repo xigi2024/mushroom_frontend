@@ -74,7 +74,7 @@ const Contact = () => {
             <div className="hero-section">
                 <div className="container">
                     <h1 className="hero-title">Contact Us</h1>
-                    <p className="hero-subtitle">
+                    <p className="hero-subtitle text-white">
                         We'd love to hear from you. Send us a message and we'll respond as soon as possible.
                     </p>
                 </div>
@@ -88,8 +88,8 @@ const Contact = () => {
                         {/* Contact Info */}
                         <div className="col-lg-6 col-md-6">
                             <div className="h-100 p-5">
-                                <h3 className="color">Get In Touch</h3>
-                                <p className="text-muted mb-4">
+                                <h3 className="color fs-3 mb-3">Get In Touch</h3>
+                                <p className=" para mb-4">
                                     Feel free to contact us via form or drop an enquiry.
                                 </p>
 
@@ -100,8 +100,8 @@ const Contact = () => {
                                         <FaPhoneAlt className="color" />
                                     </div>
                                     <div className="ms-3">
-                                        <h6 className="mb-1">Phone Number</h6>
-                                        <p className="mb-0 text-muted">+91 9884248531</p>
+                                        <h6 className="mb-1 titles">Phone Number</h6>
+                                        <p className="mb-0 para">+91 9884248531</p>
                                     </div>
                                 </div>
 
@@ -111,8 +111,8 @@ const Contact = () => {
                                         <FaEnvelope className="color" />
                                     </div>
                                     <div className="ms-3">
-                                        <h6 className="mb-1">E-Mail</h6>
-                                        <p className="mb-0 text-muted">mycomatrix1@gmail.com</p>
+                                        <h6 className="mb-1 titles">E-Mail</h6>
+                                        <p className="mb-0 para">mycomatrix1@gmail.com</p>
                                     </div>
                                 </div>
 
@@ -122,14 +122,14 @@ const Contact = () => {
                                         <FaMapMarkerAlt className="color" />
                                     </div>
                                     <div className="ms-3">
-                                        <h6 className="mb-1">Address</h6>
-                                        <p className="mb-0 text-muted">1/1/16 Ambalakar Street, Vadugapatti, Periyakulam-625 603, Theni, Tamil Nadu</p>
+                                        <h6 className="mb-1 titles">Address</h6>
+                                        <p className="mb-0 para">1/1/16 Ambalakar Street, Vadugapatti, Periyakulam-625 603, Theni, Tamil Nadu</p>
                                     </div>
                                 </div>
                                 <hr className='border-3 mt-5' />
 
                                 <div className="mt-5">
-                                    <h6 className="mb-3">Follow Us</h6>
+                                    <h6 className="mb-3 titles">Follow Us</h6>
                                     <div className="social-icons d-flex gap-3">
                                         <a href="https://www.youtube.com/@mycomatrix"><FaYoutube size={24} color="#FF0000" /></a>
                                         <a href="https://www.instagram.com/myco_matrix_mushroom"><FaInstagram size={24} color="#E1306C" /></a>
@@ -141,7 +141,7 @@ const Contact = () => {
                         {/* Contact Form */}
                         <div className="col-lg-6">
                             <div className="contact-form h-100">
-                                <h3 className="color">Send a Message</h3>
+                                <h3 className="color fs-3 mb-4">Send a Message</h3>
 
                                 {submitStatus.message && (
                                     <div className={`alert alert-${submitStatus.type}`} role="alert">
@@ -151,53 +151,53 @@ const Contact = () => {
 
                                 <form onSubmit={handleSubmit}>
                                     <div className="mb-3">
-                                        <label htmlFor="name" className="form-label">Name</label>
+                                        <label htmlFor="name" className="form-label mb-3">Name</label>
                                         <input
                                             type="text"
-                                            className="form-control"
+                                            className="form-control px-3 py-2"
                                             id="name"
                                             name="name"
                                             value={formData.name}
                                             onChange={handleInputChange}
-                                            placeholder="Your full name"
+                                            placeholder="Enter your name"
                                             required
                                             disabled={isSubmitting}
                                         />
                                     </div>
 
                                     <div className="mb-3">
-                                        <label htmlFor="phone" className="form-label">Phone</label>
+                                        <label htmlFor="phone" className="form-label mb-3">Phone</label>
                                         <input
                                             type="tel"
-                                            className="form-control"
+                                            className="form-control px-3 py-2"
                                             id="phone"
                                             name="phone"
                                             value={formData.phone}
                                             onChange={handleInputChange}
-                                            placeholder="Your phone number"
+                                            placeholder="Enter your phone number"
                                             disabled={isSubmitting}
                                         />
                                     </div>
 
                                     <div className="mb-3">
-                                        <label htmlFor="email" className="form-label">Email</label>
+                                        <label htmlFor="email" className="form-label mb-3">Email</label>
                                         <input
                                             type="email"
-                                            className="form-control"
+                                            className="form-control px-3 py-2"
                                             id="email"
                                             name="email"
                                             value={formData.email}
                                             onChange={handleInputChange}
-                                            placeholder="Your email address"
+                                            placeholder="Enter your email address"
                                             required
                                             disabled={isSubmitting}
                                         />
                                     </div>
 
                                     <div className="mb-3">
-                                        <label htmlFor="message" className="form-label">Message</label>
+                                        <label htmlFor="message" className="form-label mb-3">Message</label>
                                         <textarea
-                                            className="form-control"
+                                            className="form-control px-3 py-2"
                                             id="message"
                                             name="message"
                                             rows="4"

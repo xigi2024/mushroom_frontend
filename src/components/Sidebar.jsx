@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { FiHome, FiMonitor, FiPackage, FiUser, FiSettings, FiCreditCard, FiLogOut, FiBell } from 'react-icons/fi';
+import { FiHome, FiMonitor, FiPackage, FiUser, FiSettings, FiCreditCard, FiLogOut, FiMenu, FiX } from 'react-icons/fi';
 import './styles/sidebar.css';
+import { Link } from 'react-router-dom';
+
 
 const Sidebar = ({ activeSection, setActiveSection, userRole = 'user' }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const userData = localStorage.getItem('user');
@@ -28,13 +31,13 @@ const Sidebar = ({ activeSection, setActiveSection, userRole = 'user' }) => {
     { id: 'dashboard', icon: FiHome, label: 'User Dashboard', path: '/user-dashboard' },
     { id: 'iot-monitoring', icon: FiMonitor, label: 'IoT Monitoring', path: '/user/iot-monitoring' },
     { id: 'products', icon: FiPackage, label: 'Products Order', path: '/user/product-order' },
-    { id: 'profile', icon: FiUser, label: 'Profile', path: '/profile' },
+    { id: 'profile', icon: FiUser, label: 'My Profile', path: '/profile' },
     { id: 'payment', icon: FiCreditCard, label: 'My Payments', path: '/user-payments' }
   ];
 
   const sidebarItems = userRole === 'admin' ? adminSidebarItems : userSidebarItems;
 
-  // Set active section based on current path when component mounts or location changes
+  // Set active section based on current path
   useEffect(() => {
     const currentItem = sidebarItems.find(item => item.path === location.pathname);
     if (currentItem) {
@@ -42,10 +45,28 @@ const Sidebar = ({ activeSection, setActiveSection, userRole = 'user' }) => {
     }
   }, [location.pathname, sidebarItems, setActiveSection]);
 
+  // Close mobile menu when route changes
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [location.pathname]);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.classList.add('mobile-menu-open');
+    } else {
+      document.body.classList.remove('mobile-menu-open');
+    }
+    return () => {
+      document.body.classList.remove('mobile-menu-open');
+    };
+  }, [isMobileMenuOpen]);
+
   const handleNavigation = (item) => {
     if (item.path) {
       navigate(item.path);
       setActiveSection(item.id);
+      setIsMobileMenuOpen(false);
     }
   };
 
@@ -80,27 +101,51 @@ const Sidebar = ({ activeSection, setActiveSection, userRole = 'user' }) => {
   };
 
   return (
-    <div className="sidebar-container">
+    <>
       {/* Topbar */}
       <div className="topbar">
         <div className="topbar-content">
+          {/* Hamburger Menu for Mobile */}
+          <button 
+            className="mobile-menu-toggle"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Toggle menu"
+          >
+            {isMobileMenuOpen ? <FiX size={24} /> : <FiMenu size={24} />}
+          </button>
+
           <h2 className="dashboard-title">
             {userRole === 'admin' ? 'Admin Dashboard' : 'User Dashboard'}
           </h2>
+          
           <div className="topbar-right">
-           
             <span className="welcome-text">Welcome, {getUserDisplayName()}</span>
             <div className="user-avatar">{getUserInitials()}</div>
           </div>
         </div>
       </div>
 
+      {/* Mobile Overlay */}
+      {isMobileMenuOpen && (
+        <div 
+          className="mobile-overlay"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <div className="sidebar" style={{ display: 'flex', flexDirection: 'column', height: '100vh', position: 'fixed', left: 0, top: 0 }}>
-        <div className="sidebar-header">
-          <img src="../src/assets/logo2.png" alt="Logo" className="img-fluid" style={{ width:"200px", height:"100px", objectFit:"contain", margin:"auto" }} />
-        </div>
-        <div className="sidebar-menu" style={{ flex: 1 }}>
+      <div className={`sidebar ${isMobileMenuOpen ? 'mobile-open' : ''}`}>
+       <div className="sidebar-header">
+  <Link to="/">
+    <img 
+      src="/assets/logo2.png" 
+      alt="Logo" 
+      className="img-fluid sidebar-logo"
+    />
+  </Link>
+</div>
+
+        <div className="sidebar-menu">
           {sidebarItems.map(item => (
             <div 
               key={item.id}
@@ -112,14 +157,15 @@ const Sidebar = ({ activeSection, setActiveSection, userRole = 'user' }) => {
             </div>
           ))}
         </div>
-        <div className="sidebar-footer" style={{ marginTop: 'auto', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '10px' }}>
+
+        <div className="sidebar-footer">
           <div className="sidebar-item logout-item" onClick={handleLogout}>
-            <FiLogOut className="sidebar-icon text-black" />
-            <span className='text-black'>Logout</span>
+            <FiLogOut className="sidebar-icon" />
+            <span>Logout</span>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 

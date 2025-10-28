@@ -26,7 +26,7 @@ const Profile = () => {
         setLoading(true);
         const token = localStorage.getItem('access_token'); // ✅ FIXED
 
-        const response = await axios.get('https://mycomatrix.in/api/profile/', {
+        const response = await axios.get('http://127.0.0.1:8000/api/profile/', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -109,7 +109,7 @@ const Profile = () => {
         phone: userProfile.phone
       };
 
-      const response = await axios.put('https://mycomatrix.in/api/profile/', updateData, {
+      const response = await axios.put('http://127.0.0.1:8000/api/profile/', updateData, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -175,9 +175,23 @@ const Profile = () => {
         <Col md={4}>
           <Card className="border-0 shadow-sm mb-4">
             <Card.Body className="text-center py-5">
-              <div className="position-relative d-inline-block mb-3">
-                <div className="user-avatar-large mx-auto">{getUserInitials()}</div>
-                <Button 
+<div className="d-flex justify-content-center mb-3">
+  <div 
+    className="user-avatar-large d-flex align-items-center justify-content-center" 
+    style={{
+      width: '120px',
+      height: '120px',
+      borderRadius: '50%',
+      backgroundColor: '#F1FFF0',
+      fontSize: '48px',
+      fontWeight: 'bold',
+      color: '#15640d',
+      border: '2px solid #ddd'
+    }}
+  >
+    {getUserInitials()}
+  </div>
+</div>                <Button 
                   variant="primary" 
                   size="sm" 
                   className="position-absolute bottom-0 end-0 rounded-circle p-2"
@@ -186,13 +200,11 @@ const Profile = () => {
                 >
                   <FiCamera size={14} />
                 </Button>
-              </div>
+             
               <h5 className="mb-1">{getUserDisplayName()}</h5>
               <p className="text-muted mb-3">Mushroom Farmer</p>
               <Badge bg="success" className="px-3 py-2">Active Member</Badge>
-              <div className="mt-4">
-                <small className="text-muted">Member since {userProfile.joinDate}</small>
-              </div>
+             
             </Card.Body>
           </Card>
         </Col>
@@ -202,7 +214,7 @@ const Profile = () => {
             <Card.Header className="bg-white border-bottom d-flex justify-content-between align-items-center">
               <h6 className="mb-0">Personal Information</h6>
               <Button 
-                variant={isEditing ? "success" : "outline-primary"} 
+                variant={isEditing ? "button" : "outline-success"} 
                 size="sm"
                 onClick={isEditing ? handleSave : () => setIsEditing(true)}
                 disabled={loading}
@@ -223,6 +235,7 @@ const Profile = () => {
                     <Form.Group className="mb-3">
                       <Form.Label>Full Name</Form.Label>
                       <Form.Control
+                      className='px-3 py-2'
                         type="text"
                         value={userProfile.name}
                         disabled={!isEditing || loading}
@@ -232,8 +245,9 @@ const Profile = () => {
                   </Col>
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Email Address</Form.Label>
+                      <Form.Label >Email Address</Form.Label>
                       <Form.Control
+                      className='px-3 py-2'
                         type="email"
                         value={userProfile.email}
                         disabled={!isEditing || loading}
@@ -247,6 +261,7 @@ const Profile = () => {
                     <Form.Group className="mb-3">
                       <Form.Label>Phone Number</Form.Label>
                       <Form.Control
+                      className='px-3 py-2'
                         type="tel"
                         value={userProfile.phone}
                         disabled={!isEditing || loading}
@@ -254,20 +269,12 @@ const Profile = () => {
                       />
                     </Form.Group>
                   </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Join Date</Form.Label>
-                      <Form.Control
-                        type="text"
-                        value={userProfile.joinDate}
-                        disabled
-                      />
-                    </Form.Group>
-                  </Col>
+                
                 </Row>
                 <Form.Group className="mb-3">
                   <Form.Label>Address</Form.Label>
                   <Form.Control
+                  className='px-3 py-2'
                     as="textarea"
                     rows={2}
                     value={userProfile.address}

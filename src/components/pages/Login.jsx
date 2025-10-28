@@ -136,15 +136,15 @@ const Login = () => {
   <img
     src={mushroomImg}
     alt="Mushroom"
-    className="img-fluid mb-3"
-    style={{ maxHeight: "500px" }}
+    className="img-fluid"
+    style={{ maxHeight: "600px" }}
   />
 </Col>
 
         {/* Right Side */}
         <Col md={6} className="login-right p-4">
-          <h2 className="login-heading mb-3">Welcome back</h2>
-          <p className="login-subtext mb-4">
+          <h2 className="titles mb-3">Welcome back</h2>
+          <p className="para mb-4">
             Welcome back! Please login to your account
           </p>
 
@@ -216,9 +216,9 @@ const Login = () => {
 
             <p className="text-end mt-1">
               <span
-                style={{ cursor: "pointer", fontSize: "0.9rem" }}
+                style={{ cursor: "pointer" }}
                 onClick={() => navigate("/forgot-password")}
-                className="color fw-semibold"
+                className="color fw-semibold para"
               >
                 Forgot Password?
               </span>
@@ -227,7 +227,7 @@ const Login = () => {
             <div className="text-center">
               <button
                 type="submit"
-                className="button p-2 border rounded w-50"
+                className="button p-2 para border rounded w-100"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? "Logging in..." : "Login"}

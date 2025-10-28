@@ -452,11 +452,7 @@
 }
 
 @media (max-width: 576px) {
-  .sidebar {
-    width: 100%;
-    position: relative;
-    height: auto;
-  }
+
   
   .main-content {
     margin-left: 0;

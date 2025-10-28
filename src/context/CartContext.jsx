@@ -83,7 +83,7 @@ export const CartProvider = ({ children }) => {
         return;
       }
       
-      const response = await axios.get('https://mycomatrix.in/api/cart/', {
+      const response = await axios.get('http://127.0.0.1:8000/api/cart/', {
         headers: {
           'Authorization': `Bearer ${token}`,
         }
@@ -162,7 +162,7 @@ export const CartProvider = ({ children }) => {
     try {
       const token = localStorage.getItem('access_token');
       const response = await axios.post(
-        'https://mycomatrix.in/api/cart/add/',
+        'http://127.0.0.1:8000/api/cart/add/',
         {
           product_id: product.id,
           quantity: quantity
@@ -232,7 +232,7 @@ export const CartProvider = ({ children }) => {
       
       // Send sync request
       const response = await axios.post(
-        'https://mycomatrix.in/api/cart/sync-guest-cart/',
+        'http://127.0.0.1:8000/api/cart/sync-guest-cart/',
         { items: itemsToSync },
         {
           headers: {
@@ -298,7 +298,7 @@ export const CartProvider = ({ children }) => {
         return;
       }
       
-      await axios.delete(`https://mycomatrix.in/api/cart/remove/${itemId}/`, {
+      await axios.delete(`http://127.0.0.1:8000/api/cart/remove/${itemId}/`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         }
@@ -335,7 +335,7 @@ export const CartProvider = ({ children }) => {
       }
       
       await axios.post(
-        `https://mycomatrix.in/api/cart/update/${itemId}/`,
+        `http://127.0.0.1:8000/api/cart/update/${itemId}/`,
         { quantity: newQuantity },
         {
           headers: {
@@ -361,7 +361,7 @@ export const CartProvider = ({ children }) => {
         return;
       }
       
-      await axios.post('https://mycomatrix.in/api/cart/clear/', {}, {
+      await axios.post('http://127.0.0.1:8000/api/cart/clear/', {}, {
         headers: {
           'Authorization': `Bearer ${token}`,
         }
