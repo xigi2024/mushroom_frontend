@@ -24,7 +24,7 @@ const ProductOrder = ({ userRole = 'admin' }) => {
         return;
       }
 
-      const response = await fetch('http://127.0.0.1:8000/api/orders/my-orders/', {
+      const response = await fetch('https://mycomatrix.in/api/orders/my-orders/', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,

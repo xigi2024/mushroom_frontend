@@ -19,7 +19,7 @@ const Products = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch('http://127.0.0.1:8000/api/category/');
+        const response = await fetch('https://mycomatrix.in/api/category/');
         if (!response.ok) {
           throw new Error('Failed to fetch categories');
         }
@@ -56,7 +56,7 @@ const Products = () => {
     }
     
     if (category.image) {
-      const baseUrl = 'http://127.0.0.1:8000';
+      const baseUrl = 'https://mycomatrix.in';
       const imagePath = category.image.startsWith('/') ? category.image : `/${category.image}`;
       return `${baseUrl}${imagePath}`;
     }

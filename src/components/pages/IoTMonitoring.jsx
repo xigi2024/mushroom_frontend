@@ -5,7 +5,7 @@ import { FiThermometer, FiDroplet, FiWind, FiSun, FiAlertTriangle, FiHome, FiMon
 import Sidebar from '../Sidebar';
 import axios from 'axios';
 
-const API_BASE_URL = "http://127.0.0.1:8000/api";
+const API_BASE_URL = "https://mycomatrix.in/api";
 
 const IoTMonitoring = ({ userRole = 'admin' }) => {
   const navigate = useNavigate();

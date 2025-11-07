@@ -26,7 +26,7 @@ const UserPayments = () => {
       const token = localStorage.getItem('access_token');
       
       console.log('🔍 Fetching my payments...');
-      const response = await fetch('http://127.0.0.1:8000/api/payments/my-payments/', {
+      const response = await fetch('https://mycomatrix.in/api/payments/my-payments/', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

@@ -26,7 +26,7 @@ const Profile = () => {
         setLoading(true);
         const token = localStorage.getItem('access_token'); // ✅ FIXED
 
-        const response = await axios.get('http://127.0.0.1:8000/api/profile/', {
+        const response = await axios.get('https://mycomatrix.in/api/profile/', {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -109,7 +109,7 @@ const Profile = () => {
         phone: userProfile.phone
       };
 
-      const response = await axios.put('http://127.0.0.1:8000/api/profile/', updateData, {
+      const response = await axios.put('https://mycomatrix.in/api/profile/', updateData, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

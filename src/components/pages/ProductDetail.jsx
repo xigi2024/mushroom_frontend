@@ -19,7 +19,7 @@ const ProductDetail = () => {
         setLoading(true);
         
         // Fetch product details
-        const productResponse = await fetch(`http://127.0.0.1:8000/api/products/`);
+        const productResponse = await fetch(`https://mycomatrix.in/api/products/`);
         if (!productResponse.ok) {
           throw new Error('Failed to fetch products');
         }
@@ -33,7 +33,7 @@ const ProductDetail = () => {
         setProduct(foundProduct);
         
         // Fetch all categories and find the one with matching ID
-        const categoryResponse = await fetch('http://127.0.0.1:8000/api/category/');
+        const categoryResponse = await fetch('https://mycomatrix.in/api/category/');
         if (!categoryResponse.ok) {
           throw new Error('Failed to fetch categories');
         }

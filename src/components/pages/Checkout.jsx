@@ -164,7 +164,7 @@ Thank you for your purchase!`;
 
       console.log('📤 COD Order Payload:', codOrderPayload);
 
-      const response = await fetch('http://127.0.0.1:8000/api/create-cod-order/', {
+      const response = await fetch('https://mycomatrix.in/api/create-cod-order/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -218,7 +218,7 @@ Thank you for your purchase!`;
 
       // Step 2: Create Razorpay order in backend
       console.log('🔗 Creating Razorpay order...');
-      const orderResponse = await fetch('http://127.0.0.1:8000/api/create-razorpay-order/', {
+      const orderResponse = await fetch('https://mycomatrix.in/api/create-razorpay-order/', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -244,7 +244,7 @@ Thank you for your purchase!`;
 
       // Step 3: Razorpay options setup
       const options = {
-        key: orderData.key_id,
+        key: 'MbYEQvY5NjqTFnAxSobVm1zR',
         amount: orderData.amount,
         currency: orderData.currency,
         name: 'Mushroom Store',
@@ -279,7 +279,7 @@ Thank you for your purchase!`;
             
             console.log('📤 Sending verification & order creation payload:', verifyPayload);
 
-            const verifyResponse = await fetch('http://127.0.0.1:8000/api/verify-payment/', {
+            const verifyResponse = await fetch('https://mycomatrix.in/api/verify-payment/', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -689,11 +689,7 @@ Thank you for your purchase!`;
               </Alert>
             )}
             
-            <Alert variant="info" className="small">
-              <strong>Test Mode:</strong> Use Razorpay test cards for payment
-              <br />
-              <small>Card: 4111 1111 1111 1111 | Expiry: 12/25 | CVV: 123</small>
-            </Alert>
+      
           </Card>
         </Col>
       </Row>
