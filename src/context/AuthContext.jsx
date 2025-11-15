@@ -79,9 +79,10 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  // 🟢 Login function with simplified cart sync
+  // 🟢 Login function with TWO-STEP process
   const login = async ({ email, password }) => {
-    console.log('🔑 Attempting login with:', { email });
+    console.log('🔑 Starting login process for:', { email });
+    
     try {
       // Clear any existing tokens and data before login
       localStorage.removeItem("access_token");
@@ -91,7 +92,9 @@ export const AuthProvider = ({ children }) => {
       // Reset axios headers
       delete axios.defaults.headers.common["Authorization"];
       
-      const response = await axios.post(
+      // STEP 1: Verify credentials with /api/login/
+      console.log('🔑 Step 1: Verifying credentials...');
+      const loginResponse = await axios.post(
         "https://mycomatrix.in/api/login/",
         { 
           email: email.trim(), 
@@ -106,61 +109,97 @@ export const AuthProvider = ({ children }) => {
         }
       );
 
-      console.log('🔑 Login response status:', response.status);
-      console.log('🔑 Login response data:', response.data);
+      console.log('🔑 Login response status:', loginResponse.status);
+      console.log('🔑 Login response data:', loginResponse.data);
       
-      const data = response.data;
+      const loginData = loginResponse.data;
       
-      // Handle successful login (200 OK with access token)
-      if (response.status === 200 && data.access) {
-        const accessToken = data.access;
-        const refreshToken = data.refresh;
-        const userData = data.user || {};
+      // Handle login verification success
+      if (loginResponse.status === 200 && loginData.success) {
+        console.log('✅ Credentials verified, getting JWT tokens...');
         
-        // Store tokens and user data
-        localStorage.setItem("access_token", accessToken);
-        if (refreshToken) {
-          localStorage.setItem("refresh_token", refreshToken);
+        // STEP 2: Get JWT tokens from /api/token/
+        const tokenResponse = await axios.post(
+          "https://mycomatrix.in/api/token/",
+          { 
+            email: email.trim(), 
+            password: password 
+          },
+          { 
+            headers: { 
+              "Content-Type": "application/json",
+              "Accept": "application/json"
+            }
+          }
+        );
+
+        console.log('🔑 Token response status:', tokenResponse.status);
+        console.log('🔑 Token response data:', tokenResponse.data);
+        
+        const tokenData = tokenResponse.data;
+        
+        if (tokenResponse.status === 200 && tokenData.access) {
+          const accessToken = tokenData.access;
+          const refreshToken = tokenData.refresh;
+          const userData = loginData.user || {};
+          
+          // Store tokens and user data
+          localStorage.setItem("access_token", accessToken);
+          if (refreshToken) {
+            localStorage.setItem("refresh_token", refreshToken);
+          }
+          localStorage.setItem("user", JSON.stringify(userData));
+          
+          // Update state and set axios header
+          setToken(accessToken);
+          setUser(userData);
+          setError(null);
+          setIsAuthenticated(true);
+          axios.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
+          
+          console.log('✅ Login successful for user:', userData.email);
+          
+          // 🛒 SYNC GUEST CART TO DATABASE
+          const syncResult = await syncGuestCartToDatabase(accessToken);
+          
+          return { 
+            success: true,
+            message: loginData.message || 'Login successful!',
+            user: userData,
+            cartSync: syncResult
+          };
+        } else {
+          throw new Error('Failed to get JWT tokens');
         }
-        localStorage.setItem("user", JSON.stringify(userData));
-        
-        // Update state and set axios header
-        setToken(accessToken);
-        setUser(userData);
-        setError(null);
-        setIsAuthenticated(true);
-        axios.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
-        
-        console.log('✅ Login successful for user:', userData.email);
-        
-        // 🛒 SYNC GUEST CART TO DATABASE
-        const syncResult = await syncGuestCartToDatabase(accessToken);
-        
-        return { 
-          success: true,
-          message: data.message || 'Login successful!',
-          user: userData,
-          cartSync: syncResult
-        };
       } 
       
-      // Handle error cases
-      let errorMessage = data.message || 'Login failed. Please try again.';
-      if (response.status === 401) {
-        errorMessage = data.message || 'Invalid email or password';
+      // Handle login verification errors
+      let errorMessage = loginData.message || 'Login failed. Please try again.';
+      if (loginResponse.status === 401) {
+        errorMessage = loginData.message || 'Invalid email or password';
       }
       
-      console.error('❌ Login failed:', errorMessage);
+      console.error('❌ Login verification failed:', errorMessage);
       return {
         success: false,
         message: errorMessage,
-        status: response.status,
-        data: data
+        status: loginResponse.status,
+        data: loginData
       };
       
     } catch (err) {
-      const errorMessage = err.response?.data?.message || err.message || 'An error occurred during login';
-      console.error("❌ Login error:", errorMessage, err);
+      console.error("❌ Login process error:", err);
+      
+      let errorMessage = 'An error occurred during login';
+      
+      if (err.response?.data?.detail) {
+        errorMessage = err.response.data.detail;
+      } else if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
       setError(errorMessage);
       return { 
         success: false, 

@@ -62,8 +62,7 @@ p, li, ul, .nav-link, .btn, a,
         font-size: 0.85rem;
      
     }
-}
-  
+}  
 .section{
     padding: 90px 0;
 }
@@ -72,12 +71,6 @@ p, li, ul, .nav-link, .btn, a,
     border-color: #198754 !important;
     color: white !important;
 }
-@media (min-width: 1400px) {
-  .container, .container-lg, .container-md, .container-sm, .container-xl, .container-xxl {
-      max-width: 1440px !important;
-  }
-}
-
 
 .footer-text {
   color: #212529; /* unaku consistent color */

@@ -7,11 +7,11 @@ const Checkout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { cart, getTotalPrice, getTotalItems, clearCart, isAuthenticated } = useCart();
-  
+
   // ✅ IMPORTANT: Location state check pannu
   const locationState = location.state || {};
   const fromCart = locationState.fromCart || false;
-  
+
   // ✅ Check which route la irukkom
   let cartTotal, totalItems, totalAmount;
   let orderItems = [];
@@ -21,7 +21,7 @@ const Checkout = () => {
     cartTotal = getTotalPrice();
     totalItems = getTotalItems();
     totalAmount = cartTotal;
-    
+
     // Cart items prepare pannu
     orderItems = cart?.items?.map(item => ({
       product: item.product?.name || 'Product',
@@ -35,7 +35,7 @@ const Checkout = () => {
     cartTotal = locationState.total || 0;
     totalItems = locationState.quantity || 1;
     totalAmount = locationState.total || 0;
-    
+
     // Single product prepare pannu
     orderItems = [{
       product: locationState.product || 'Product',
@@ -90,13 +90,13 @@ const Checkout = () => {
   // ✅ Payment success la cart clear pannu (only for cart checkout)
   const handlePaymentSuccess = (orderDetails) => {
     console.log('✅ Payment successful - Order Details:', orderDetails);
-    
+
     if (fromCart) {
       clearCart(); // Cart clear pannu only if from cart
     }
-    
+
     // Show success message with order details
-    const successMessage = orderDetails.payment_method === 'cod' 
+    const successMessage = orderDetails.payment_method === 'cod'
       ? `🎉 COD Order Placed Successfully! 
 Order ID: ORD-${orderDetails.db_order_id}
 Amount: ₹${orderDetails.amount}
@@ -105,11 +105,11 @@ We will contact you for delivery.`
 Order ID: ORD-${orderDetails.db_order_id}
 Amount: ₹${orderDetails.amount}
 Thank you for your purchase!`;
-    
+
     alert(successMessage);
-    
-    navigate('/order-success', { 
-      state: { 
+
+    navigate('/order-success', {
+      state: {
         orderDetails,
         orderItems,
         shippingAddress: formData
@@ -148,7 +148,7 @@ Thank you for your purchase!`;
       }
 
       console.log('🔄 Creating COD order...');
-      
+
       const codOrderPayload = {
         order_type: fromCart ? 'cart' : 'single_product',
         total_amount: totalAmount,
@@ -237,7 +237,7 @@ Thank you for your purchase!`;
 
       const orderData = await orderResponse.json();
       console.log('📄 Razorpay order response:', orderData);
-      
+
       if (!orderData.success) {
         throw new Error(orderData.error || 'Failed to create Razorpay order');
       }
@@ -250,16 +250,16 @@ Thank you for your purchase!`;
         name: 'Mushroom Store',
         description: fromCart ? `Order for ${totalItems} items` : `Order for ${locationState.product}`,
         order_id: orderData.order_id,
-        
+
         // ✅ Payment Success Handler - UPDATED WITH ORDER CONFIRMATION
         handler: async function (response) {
           console.log('💰 Razorpay payment response:', response);
-          
+
           try {
             // Step 4: Verify payment with backend and CREATE ORDER
             const token = localStorage.getItem('access_token');
             console.log('🔐 Using token for verification:', token ? 'Token present' : 'No token');
-            
+
             const verifyPayload = {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_order_id: response.razorpay_order_id,
@@ -276,7 +276,7 @@ Thank you for your purchase!`;
                 pincode: formData.pincode
               }
             };
-            
+
             console.log('📤 Sending verification & order creation payload:', verifyPayload);
 
             const verifyResponse = await fetch('https://mycomatrix.in/api/verify-payment/', {
@@ -294,14 +294,14 @@ Thank you for your purchase!`;
 
             const verifyData = await verifyResponse.json();
             console.log('📥 Verification & Order Creation Response:', verifyData);
-            
+
             if (verifyData.status === 'success') {
               console.log('✅ Payment verified and ORDER CREATED successfully');
-              
+
               // ✅ IMPORTANT: Check if order actually created in database
               if (verifyData.db_order_id) {
                 console.log('🎉 Order confirmed in database with ID:', verifyData.db_order_id);
-                
+
                 handlePaymentSuccess({
                   payment_id: response.razorpay_payment_id,
                   razorpay_order_id: response.razorpay_order_id,
@@ -328,41 +328,61 @@ Thank you for your purchase!`;
             setLoading(false);
           }
         },
-        
+
         // ✅ Prefill customer details
         prefill: {
           name: formData.name,
           email: formData.email,
           contact: formData.phone
         },
-        
+
         // ✅ Theme
         theme: {
           color: '#28a745'
         },
-        
+
         // ✅ Modal close handler
         modal: {
-          ondismiss: function() {
+          ondismiss: function () {
             console.log('❌ Payment modal closed by user');
             setLoading(false);
           }
         }
       };
 
-      // Step 5: Open Razorpay checkout
+      // Step 5: Open Razorpay checkout with updated initialization
       console.log('🎯 Opening Razorpay checkout...');
-      const razorpay = new window.Razorpay(options);
       
-      // ✅ Payment failed handler
-      razorpay.on('payment.failed', function (response) {
+      // Add payment.failed handler to options if not already present
+      if (!options.handler) {
+        options.handler = function(response) {
+          console.log('Razorpay payment response:', response);
+        };
+      }
+      
+      // Add payment.failed event to options
+      options.handler.payment_failed = function(response) {
         console.error('❌ Payment failed:', response.error);
         alert(`❌ Payment Failed: ${response.error.description}`);
         setLoading(false);
-      });
-
-      razorpay.open();
+      };
       
+      // Initialize and open Razorpay with a single options object
+      const razorpay = new window.Razorpay({
+        ...options,
+        // Ensure all event handlers are included in the single options object
+        handler: options.handler,
+        modal: {
+          ...options.modal,
+          ondismiss: function() {
+            console.log('❌ Payment modal closed by user');
+            setLoading(false);
+          }
+        }
+      });
+      
+      razorpay.open();
+
     } catch (error) {
       console.error('❌ Payment process error:', error);
       setError(error.message || 'Payment failed. Please try again.');
@@ -372,9 +392,9 @@ Thank you for your purchase!`;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     console.log('📝 Form submitted:', formData);
-    
+
     // Form validation
     if (!formData.name || !formData.email || !formData.phone || !formData.address || !formData.city || !formData.pincode) {
       setError('Please fill all required fields');
@@ -404,7 +424,7 @@ Thank you for your purchase!`;
     if (formData.paymentMethod === 'cod') {
       try {
         setLoading(true);
-        
+
         if (!isAuthenticated) {
           setError('Please login to place COD order');
           setLoading(false);
@@ -413,7 +433,7 @@ Thank you for your purchase!`;
 
         console.log('🔄 Processing COD order...');
         const codResult = await createCODOrder();
-        
+
         if (codResult.success) {
           console.log('✅ COD order created successfully:', codResult);
           handlePaymentSuccess(codResult);
@@ -427,7 +447,7 @@ Thank you for your purchase!`;
       }
       return;
     }
-    
+
     // Online payment
     await handlePayment();
   };
@@ -439,7 +459,7 @@ Thank you for your purchase!`;
         <Card className="text-center p-5">
           <h4>Invalid Order</h4>
           <p className="text-muted mb-4">Please add items to your cart or select a product</p>
-          <Button 
+          <Button
             className="button"
             onClick={() => navigate('/products')}
           >
@@ -453,13 +473,7 @@ Thank you for your purchase!`;
   return (
     <Container className="my-5">
       <h2 className="text-center mb-4">Checkout</h2>
-      
-      {error && (
-        <Alert variant="danger" className="mb-4">
-          {error}
-        </Alert>
-      )}
-      
+
       <Row>
         {/* Shipping Information */}
         <Col md={8}>
@@ -496,7 +510,7 @@ Thank you for your purchase!`;
                   </Form.Group>
                 </Col>
               </Row>
-              
+
               <Form.Group className="mb-3">
                 <Form.Label>Phone Number *</Form.Label>
                 <Form.Control
@@ -597,9 +611,9 @@ Thank you for your purchase!`;
                   </small>
                 )}
               </Form.Group>
-              
-              <Button 
-                type="submit" 
+
+              <Button
+                type="submit"
                 className="button mt-3 w-100"
                 disabled={loading}
                 size="lg"
@@ -616,30 +630,24 @@ Thank you for your purchase!`;
                 )}
               </Button>
 
-              {/* Debug Info */}
-              {process.env.NODE_ENV === 'development' && (
-                <div className="mt-3 p-2 bg-light rounded">
-                  <small className="text-muted">
-                    <strong>Debug Info:</strong><br />
-                    Auth: {isAuthenticated ? 'Yes' : 'No'} | 
-                    Items: {orderItems.length} | 
-                    Total: ₹{totalAmount} |
-                    From Cart: {fromCart ? 'Yes' : 'No'} |
-                    Payment Method: {formData.paymentMethod}
-                  </small>
-                </div>
-              )}
             </Form>
           </Card>
+          {error && (
+            <Alert variant="danger" className="mb-4">
+              {error}
+            </Alert>
+          )}
         </Col>
-        
+
+
+
         {/* 🟢 Order Summary */}
         <Col md={4}>
           <Card className="p-4">
             <h4 className="mb-4">
               Order Summary {fromCart ? `(${totalItems} items)` : ''}
             </h4>
-            
+
             {/* Order Items List */}
             {orderItems.map((item, index) => (
               <div key={index} className="d-flex justify-content-between mb-2">
@@ -652,44 +660,44 @@ Thank you for your purchase!`;
                 <span className="fw-semibold">₹{item.total.toFixed(2)}</span>
               </div>
             ))}
-            
+
             <hr />
-            
+
             <div className="d-flex justify-content-between mb-2">
               <span>Subtotal {fromCart ? `(${totalItems} items)` : ''}</span>
               <span>₹{cartTotal.toFixed(2)}</span>
             </div>
-            
+
             <div className="d-flex justify-content-between mb-2">
               <span>Shipping</span>
               <span className="text-success">FREE</span>
             </div>
-            
+
             <div className="d-flex justify-content-between mb-2">
               <span>Tax</span>
               <span className="text-muted">Included</span>
             </div>
-            
+
             <hr />
-            
+
             <div className="d-flex justify-content-between mb-4 fw-bold fs-5">
               <span>Total Amount</span>
               <span>₹{totalAmount.toFixed(2)}</span>
             </div>
-            
+
             {!isAuthenticated && formData.paymentMethod !== 'cod' && (
               <Alert variant="warning" className="small">
                 <strong>Login Required:</strong> Please login to save your order history
               </Alert>
             )}
-            
+
             {formData.paymentMethod === 'cod' && (
               <Alert variant="info" className="small">
                 <strong>Cash on Delivery:</strong> Pay when you receive your order
               </Alert>
             )}
-            
-      
+
+
           </Card>
         </Col>
       </Row>
