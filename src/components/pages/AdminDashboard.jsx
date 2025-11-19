@@ -1,8 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { Container, Row, Col, Card, Table, Badge, ProgressBar, Button } from 'react-bootstrap';
 import { FiPackage, FiHome, FiTrendingUp, FiThermometer, FiDroplet, FiWind, FiSun, FiAlertTriangle } from 'react-icons/fi';
+import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
+import { Line } from 'react-chartjs-2';
 import Sidebar from '../Sidebar'; // Import the separate Sidebar component
 import '../styles/dashboard.css';
+
+// Register ChartJS components
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
@@ -11,6 +24,21 @@ const AdminDashboard = () => {
     humidity: 80,
     co2Level: 800,
     lightIntensity: 1200
+  });
+
+  // Chart data for sensor history
+  const [sensorHistory, setSensorHistory] = useState({
+    labels: Array(12).fill('').map((_, i) => {
+      // Generate time labels for 5-minute intervals (last hour)
+      const date = new Date();
+      date.setMinutes(date.getMinutes() - ((12 - i) * 5));
+      return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    }),
+    temperature: Array(12).fill(22),
+    humidity: Array(12).fill(80),
+    co2: Array(12).fill(800),
+    light: Array(12).fill(1200),
+    lastUpdate: new Date()
   });
 
   // Simulate real-time IoT data updates
@@ -26,6 +54,28 @@ const AdminDashboard = () => {
 
     return () => clearInterval(interval);
   }, []);
+
+  // Update chart data when iotData changes
+  useEffect(() => {
+    const now = new Date();
+    const timeDiff = (now - sensorHistory.lastUpdate) / (1000 * 60); // in minutes
+    
+    // Only update if 5 minutes have passed since last update
+    if (timeDiff >= 5) {
+      setSensorHistory(prev => {
+        const newLabels = [...prev.labels.slice(1), now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})];
+        return {
+          ...prev,
+          labels: newLabels,
+          temperature: [...prev.temperature.slice(1), iotData.temperature],
+          humidity: [...prev.humidity.slice(1), iotData.humidity],
+          co2: [...prev.co2.slice(1), iotData.co2Level],
+          light: [...prev.light.slice(1), iotData.lightIntensity],
+          lastUpdate: now
+        };
+      });
+    }
+  }, [iotData, sensorHistory.lastUpdate]);
 
   const recentOrders = [
     { id: '001', product: 'Organic Shiitake', quantity: '2kg', status: 'delivered', date: '2024-01-15' },
@@ -48,6 +98,146 @@ const AdminDashboard = () => {
     if (value >= min && value <= max) return 'optimal';
     if (value < min - 5 || value > max + 5) return 'critical';
     return 'warning';
+  };
+
+  const chartData = {
+    labels: sensorHistory.labels,
+    datasets: [
+      {
+        label: 'Temperature (°C)',
+        data: sensorHistory.temperature,
+        borderColor: 'rgba(255, 99, 132, 1)',
+        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+        tension: 0.4,
+        yAxisID: 'y',
+        pointRadius: 2,
+        borderWidth: 2
+      },
+      {
+        label: 'Humidity (%)',
+        data: sensorHistory.humidity,
+        borderColor: 'rgba(54, 162, 235, 1)',
+        backgroundColor: 'rgba(54, 162, 235, 0.2)',
+        tension: 0.4,
+        yAxisID: 'y1',
+        pointRadius: 2,
+        borderWidth: 2
+      },
+      {
+        label: 'CO2 (ppm)',
+        data: sensorHistory.co2,
+        borderColor: 'rgba(255, 159, 64, 1)',
+        backgroundColor: 'rgba(255, 159, 64, 0.2)',
+        tension: 0.4,
+        yAxisID: 'y2',
+        pointRadius: 2,
+        borderWidth: 2
+      },
+      {
+        label: 'Light (lux)',
+        data: sensorHistory.light,
+        borderColor: 'rgba(75, 192, 192, 1)',
+        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+        tension: 0.4,
+        yAxisID: 'y3',
+        pointRadius: 2,
+        borderWidth: 2
+      }
+    ]
+  };
+
+  const chartOptions = {
+    responsive: true,
+    interaction: {
+      mode: 'index',
+      intersect: false,
+    },
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            let label = context.dataset.label || '';
+            if (label) {
+              label += ': ';
+            }
+            if (context.parsed.y !== null) {
+              label += context.parsed.y;
+              if (label.includes('°C')) label = label.replace('°C', ' °C');
+              if (label.includes('%')) label = label.replace('%', ' %');
+              if (label.includes('ppm')) label = label.replace('ppm', ' ppm');
+              if (label.includes('lux')) label = label.replace('lux', ' lux');
+            }
+            return label;
+          }
+        }
+      }
+    },
+    scales: {
+      y: {
+        type: 'linear',
+        display: true,
+        position: 'left',
+        title: {
+          display: true,
+          text: 'Temperature (°C)'
+        },
+        min: 15,
+        max: 35,
+        grid: {
+          drawOnChartArea: false
+        }
+      },
+      y1: {
+        type: 'linear',
+        display: true,
+        position: 'right',
+        title: {
+          display: true,
+          text: 'Humidity (%)'
+        },
+        min: 50,
+        max: 100,
+        grid: {
+          drawOnChartArea: false
+        }
+      },
+      y2: {
+        type: 'linear',
+        display: true,
+        position: 'left',
+        title: {
+          display: true,
+          text: 'CO2 (ppm)'
+        },
+        min: 500,
+        max: 1500,
+        grid: {
+          drawOnChartArea: false
+        }
+      },
+      y3: {
+        type: 'linear',
+        display: true,
+        position: 'right',
+        title: {
+          display: true,
+          text: 'Light (lux)'
+        },
+        min: 500,
+        max: 2000,
+        grid: {
+          drawOnChartArea: false
+        }
+      },
+      x: {
+        grid: {
+          display: false
+        }
+      }
+    }
   };
 
   const renderDashboardContent = () => {
@@ -101,18 +291,33 @@ const AdminDashboard = () => {
           {/* Chart Section */}
           <Col md={6}>
             <Card className="chart-card">
-              <Card.Header>
-                <h6 className="mb-0">ASSET GENERATED</h6>
+              <Card.Header className="d-flex justify-content-between align-items-center">
+                <h6 className="mb-0">SENSOR DATA TREND</h6>
+                <div className="d-flex align-items-center">
+                  <div className="sensor-legend me-3">
+                    <span className="sensor-dot" style={{backgroundColor: 'rgba(255, 99, 132, 1)'}}></span>
+                    <span className="ms-1">Temp</span>
+                  </div>
+                  <div className="sensor-legend me-3">
+                    <span className="sensor-dot" style={{backgroundColor: 'rgba(54, 162, 235, 1)'}}></span>
+                    <span className="ms-1">Humidity</span>
+                  </div>
+                  <div className="sensor-legend me-3">
+                    <span className="sensor-dot" style={{backgroundColor: 'rgba(255, 159, 64, 1)'}}></span>
+                    <span className="ms-1">CO₂</span>
+                  </div>
+                  <div className="sensor-legend">
+                    <span className="sensor-dot" style={{backgroundColor: 'rgba(75, 192, 192, 1)'}}></span>
+                    <span className="ms-1">Light</span>
+                  </div>
+                </div>
               </Card.Header>
               <Card.Body>
-                <div className="chart-value">128,7K</div>
-                <div className="chart-change text-success">
-                  <span>220,342.76</span>
-                  <span className="ms-2">+3.4%</span>
+                <div style={{ height: '300px' }}>
+                  <Line data={chartData} options={chartOptions} />
                 </div>
-                {/* Simple chart representation */}
-                <div className="simple-chart mt-3">
-                  <div className="chart-line"></div>
+                <div className="mt-2 text-center">
+                  <small className="text-muted">Real-time sensor data (updates every 3 seconds)</small>
                 </div>
               </Card.Body>
             </Card>
@@ -261,17 +466,6 @@ const AdminDashboard = () => {
 
       {/* Main Content */}
       <div className="main-content">
-        {/* Header */}
-        <div className="dashboard-header">
-          <div className="d-flex justify-content-between align-items-center">
-            <h2 className="mb-0">Admin Dashboard</h2>
-            <div className="d-flex align-items-center gap-3">
-              <span className="text-muted">Welcome, Delicious Recipe</span>
-              <div className="user-avatar">DR</div>
-            </div>
-          </div>
-        </div>
-
         {/* Dashboard Content */}
         <div className="dashboard-content">
           {renderContent()}

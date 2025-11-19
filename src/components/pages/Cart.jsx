@@ -140,7 +140,7 @@ const Cart = () => {
                             style={{ cursor: 'pointer' }}
                           >
                             <Image
-                              src={product.image ? `http://localhost:8000${product.image}` : (product.images?.[0]?.image ? `http://localhost:8000${product.images[0].image}` : 'https://via.placeholder.com/100x100/28a745/ffffff?text=Product')}
+                              src={product.image ? `https://mycomatrix.in${product.image}` : (product.images?.[0]?.image ? `https://mycomatrix.in${product.images[0].image}` : 'https://via.placeholder.com/100x100/28a745/ffffff?text=Product')}
                               width="60"
                               height="60"
                               className="me-3 rounded"

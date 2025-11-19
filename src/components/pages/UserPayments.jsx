@@ -3,7 +3,8 @@ import { Row, Col, Card, Table, Badge, Button, Form, InputGroup, Spinner } from 
 import { FiSearch, FiDownload, FiCreditCard, FiCalendar, FiRefreshCw } from 'react-icons/fi';
 import { FaMoneyBillWave } from "react-icons/fa";
 import Sidebar from '../Sidebar';
-import { useNavigate } from 'react-router-dom'; // ✅ Add this import
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 
 const UserPayments = () => {
   const [activeSection, setActiveSection] = useState('payment');
@@ -12,47 +13,66 @@ const UserPayments = () => {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const navigate = useNavigate(); // ✅ Add navigate
-
-  // ✅ API la irundhu payment data fetch pannu
-  useEffect(() => {
-    fetchMyPayments();
-  }, []);
+  const navigate = useNavigate();
+  const { isAuthenticated, token } = useAuth();
 
   const fetchMyPayments = async () => {
+    if (!isAuthenticated || !token) {
+      console.log('User not authenticated, redirecting to login...');
+      navigate('/login');
+      return;
+    }
+
     try {
       setLoading(true);
       setError('');
-      const token = localStorage.getItem('access_token');
       
-      console.log('🔍 Fetching my payments...');
-      const response = await fetch('https://mycomatrix.in/api/payments/my-payments/', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      console.log('🔍 Fetching my orders with payments...');
+const response = await fetch('https://mycomatrix.in/api/payments/my-payments/', {
+  method: 'GET',
+  headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${token}`
+  }
+});
+
+      if (response.status === 401) {
+        // Token expired or invalid, redirect to login
+        localStorage.removeItem('access_token');
+        navigate('/login');
+        return;
+      }
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('✅ My payments API response:', data);
+      console.log('✅ My orders with payments API response:', data);
       
-      if (data.success) {
-        setPayments(data.payments || []);
-      } else {
-        setError(data.error || 'Failed to fetch payments');
-      }
-      setLoading(false);
-    } catch (error) {
-      console.error('❌ Error fetching payments:', error);
-      setError('Failed to load payment data: ' + error.message);
+     if (data.success) {
+  setPayments(data.payments || []);
+} else {
+  setError(data.error || 'Failed to fetch payment history');
+}
+    } catch (err) {
+      console.error('Error fetching payment history:', err);
+      setError('Failed to load payment history. Please try again later.');
+    } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchMyPayments();
+    } else {
+      // If not authenticated, redirect to login
+      navigate('/login');
+    }
+  }, [isAuthenticated]);
+
 
   const exportToCSV = () => {
     if (payments.length === 0) {
@@ -306,7 +326,7 @@ const UserPayments = () => {
                     {filteredPayments.map((payment) => (
                       <tr key={payment.id}>
                         <td className="py-3">
-                          <strong className="text-primary">#{payment.id}</strong>
+                          <strong className="text-primary">{payment.id}</strong>
                         </td>
                         <td className="py-3">
                           <code className="text-muted small">

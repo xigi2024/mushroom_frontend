@@ -65,149 +65,122 @@ export const AuthProvider = ({ children }) => {
     return !!localStorage.getItem('access_token');
   });
 
-  // 🟢 Load auth data from localStorage
+  // 🟢 Load auth data from localStorage and validate token
   useEffect(() => {
-    const storedToken = localStorage.getItem("access_token");
-    const storedUser = localStorage.getItem("user");
+    const validateToken = async () => {
+      const storedToken = localStorage.getItem("access_token");
+      const storedUser = localStorage.getItem("user");
 
-    if (storedToken && storedUser) {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-      setIsAuthenticated(true);
-      axios.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
-    }
-    setLoading(false);
+      if (!storedToken || !storedUser) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Verify token is still valid by making a simple API call
+        await axios.get('https://mycomatrix.in/api/profile/', {
+          headers: {
+            'Authorization': `Bearer ${storedToken}`
+          }
+        });
+
+        // Token is valid, set up auth state
+        setToken(storedToken);
+        setUser(JSON.parse(storedUser));
+        setIsAuthenticated(true);
+        axios.defaults.headers.common["Authorization"] = `Bearer ${storedToken}`;
+      } catch (error) {
+        // Token is invalid, clear auth state
+        console.error('Token validation failed:', error);
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
+        delete axios.defaults.headers.common["Authorization"];
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    validateToken();
   }, []);
 
-  // 🟢 Login function with TWO-STEP process
-  const login = async ({ email, password }) => {
-    console.log('🔑 Starting login process for:', { email });
-    
-    try {
-      // Clear any existing tokens and data before login
-      localStorage.removeItem("access_token");
-      localStorage.removeItem("refresh_token");
-      localStorage.removeItem("user");
-      
-      // Reset axios headers
-      delete axios.defaults.headers.common["Authorization"];
-      
-      // STEP 1: Verify credentials with /api/login/
-      console.log('🔑 Step 1: Verifying credentials...');
-      const loginResponse = await axios.post(
-        "https://mycomatrix.in/api/login/",
-        { 
-          email: email.trim(), 
-          password: password 
-        },
-        { 
-          headers: { 
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
-          validateStatus: (status) => status < 500 // Don't throw on 4xx errors
-        }
-      );
+  // 🟢 UPDATED Login function - Use /api/login/ endpoint
+const login = async ({ email, password }) => {
+  console.log('🔑 Starting login process...');
+  
+  try {
+    // Clear old data
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("refresh_token");
+    localStorage.removeItem("user");
 
-      console.log('🔑 Login response status:', loginResponse.status);
-      console.log('🔑 Login response data:', loginResponse.data);
-      
-      const loginData = loginResponse.data;
-      
-      // Handle login verification success
-      if (loginResponse.status === 200 && loginData.success) {
-        console.log('✅ Credentials verified, getting JWT tokens...');
-        
-        // STEP 2: Get JWT tokens from /api/token/
-        const tokenResponse = await axios.post(
-          "https://mycomatrix.in/api/token/",
-          { 
-            email: email.trim(), 
-            password: password 
-          },
-          { 
-            headers: { 
-              "Content-Type": "application/json",
-              "Accept": "application/json"
-            }
-          }
-        );
+    setToken(null);
+    setUser(null);
+    setIsAuthenticated(false);
 
-        console.log('🔑 Token response status:', tokenResponse.status);
-        console.log('🔑 Token response data:', tokenResponse.data);
-        
-        const tokenData = tokenResponse.data;
-        
-        if (tokenResponse.status === 200 && tokenData.access) {
-          const accessToken = tokenData.access;
-          const refreshToken = tokenData.refresh;
-          const userData = loginData.user || {};
-          
-          // Store tokens and user data
-          localStorage.setItem("access_token", accessToken);
-          if (refreshToken) {
-            localStorage.setItem("refresh_token", refreshToken);
-          }
-          localStorage.setItem("user", JSON.stringify(userData));
-          
-          // Update state and set axios header
-          setToken(accessToken);
-          setUser(userData);
-          setError(null);
-          setIsAuthenticated(true);
-          axios.defaults.headers.common["Authorization"] = `Bearer ${accessToken}`;
-          
-          console.log('✅ Login successful for user:', userData.email);
-          
-          // 🛒 SYNC GUEST CART TO DATABASE
-          const syncResult = await syncGuestCartToDatabase(accessToken);
-          
-          return { 
-            success: true,
-            message: loginData.message || 'Login successful!',
-            user: userData,
-            cartSync: syncResult
-          };
-        } else {
-          throw new Error('Failed to get JWT tokens');
-        }
-      } 
-      
-      // Handle login verification errors
-      let errorMessage = loginData.message || 'Login failed. Please try again.';
-      if (loginResponse.status === 401) {
-        errorMessage = loginData.message || 'Invalid email or password';
+    delete axios.defaults.headers.common["Authorization"];
+
+    // 🔥 Correct login API
+    const response = await axios.post(
+      "https://mycomatrix.in/api/login/",
+      {
+        email: email.trim(),
+        password: password,
+      },
+      {
+        headers: { "Content-Type": "application/json" },
       }
-      
-      console.error('❌ Login verification failed:', errorMessage);
-      return {
-        success: false,
-        message: errorMessage,
-        status: loginResponse.status,
-        data: loginData
-      };
-      
-    } catch (err) {
-      console.error("❌ Login process error:", err);
-      
-      let errorMessage = 'An error occurred during login';
-      
-      if (err.response?.data?.detail) {
-        errorMessage = err.response.data.detail;
-      } else if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-      
-      setError(errorMessage);
-      return { 
-        success: false, 
-        message: errorMessage,
-        error: err
-      };
+    );
+
+    console.log("🔍 Login API data:", response.data);
+
+    if (!response.data.success) {
+      return { success: false, message: response.data.message };
     }
-  };
+
+    // 💥 Correct user object from backend
+    const accessToken = response.data.access;
+    const refreshToken = response.data.refresh;
+    const userData = response.data.user;
+
+    if (!userData.role) {
+      console.warn("⚠ User role missing in response!");
+    }
+
+    // SAVE → THIS was your missing part
+    localStorage.setItem("access_token", accessToken);
+    localStorage.setItem("refresh_token", refreshToken);
+    localStorage.setItem("user", JSON.stringify(userData));
+
+    // UPDATE STATE
+    setToken(accessToken);
+    setUser(userData);
+    setIsAuthenticated(true);
+
+    // Add token to axios
+    axios.defaults.headers.common[
+      "Authorization"
+    ] = `Bearer ${accessToken}`;
+
+    console.log("✅ Login success — role:", userData.role);
+
+    return {
+      success: true,
+      message: response.data.message,
+      user: userData,
+    };
+  } catch (error) {
+    console.error("❌ Login Error:", error);
+    const msg =
+      error.response?.data?.message ||
+      error.response?.data?.error ||
+      error.message ||
+      "Login failed";
+
+    return { success: false, message: msg };
+  }
+};
+
 
   // 🛒 Sync guest cart to database after login
   const syncGuestCartToDatabase = async (accessToken) => {
@@ -234,7 +207,7 @@ export const AuthProvider = ({ children }) => {
       
       // Prepare items for sync
       const itemsToSync = guestCart.items.map(item => ({
-        product_id: item.product.id,
+        product_id: item.product?.id,
         quantity: item.qty || 1
       }));
       
@@ -280,18 +253,22 @@ export const AuthProvider = ({ children }) => {
 
   // 🟢 Logout function
   const logout = () => {
+    // Clear all auth-related data
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("user");
-    localStorage.removeItem("guest_cart"); // Also clear guest cart on logout
-
-    setToken(null);
+    
+    // Reset state
     setUser(null);
+    setToken(null);
     setIsAuthenticated(false);
-
+    setError(null);
+    
+    // Clear axios headers
     delete axios.defaults.headers.common["Authorization"];
-
-    window.location.href = "/login";
+    
+    // Navigate to login and force a full page reload to clear any cached data
+    window.location.href = '/login';
   };
 
   // 🟢 Auto logout on 401
@@ -300,6 +277,7 @@ export const AuthProvider = ({ children }) => {
       (response) => response,
       (error) => {
         if (error.response?.status === 401) {
+          console.log('🛑 401 Unauthorized - Auto logging out');
           logout();
         }
         return Promise.reject(error);

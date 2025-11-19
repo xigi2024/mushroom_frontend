@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Container, Row, Col, Button, Card, Image, ListGroup, Carousel, Spinner, Alert } from "react-bootstrap";
 import { useNavigate, Link, useParams } from "react-router-dom";
+import { useCart } from "../../context/CartContext";
 
 const ProductDetail = () => {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeImage, setActiveImage] = useState(0);
+  const { addToCart } = useCart();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -222,7 +224,20 @@ const ProductDetail = () => {
 >
   Buy Now
 </Button>
-              <Button variant="outline-secondary w-50" onClick={() => navigate("/cart")}>Add to Cart</Button>
+<Button
+  variant="outline-secondary w-50"
+  onClick={async () => {
+    const result = await addToCart(product, quantity);
+
+    if (result.success) {
+      navigate("/cart");  // Cart page ku redirect
+    } else {
+      alert("Failed to add product to cart");
+    }
+  }}
+>
+  Add to Cart
+</Button>
             </div>
           </Col>
         </Row>

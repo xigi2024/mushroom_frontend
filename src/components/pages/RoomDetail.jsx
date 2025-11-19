@@ -5,32 +5,16 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 import 'bootstrap/dist/css/bootstrap.min.css';
 import { FiThermometer, FiDroplet, FiWind, FiSun, FiClock, FiActivity, FiArrowLeft } from 'react-icons/fi';
 import Sidebar from '../Sidebar';
+import axios from 'axios';
+import { useAuth } from '../../context/AuthContext';
 
-// Mock data generator - More realistic data
-const generateMockData = (baseTemp, baseHumidity, baseCO2, baseLight) => {
-  const data = [];
-  const timeSlots = [
-    '08:22 AM', '09:22 AM', '10:22 AM', '11:22 AM', '12:22 PM',
-    '01:22 PM', '02:22 PM', '03:22 PM', '04:22 PM', '05:22 PM',
-    '06:22 PM', '07:22 PM', '08:22 PM'
-  ];
-  
-  timeSlots.forEach((time, index) => {
-    data.push({
-      time: time,
-      temperature: Math.round((Math.random() * 3) + (baseTemp - 1)), // Based on actual temp
-      humidity: Math.round((Math.random() * 10) + (baseHumidity - 5)), // Based on actual humidity
-      co2: Math.round((Math.random() * 200) + (baseCO2 - 100)), // Based on actual CO2
-      light: Math.round((Math.random() * 300) + (baseLight - 150)) // Based on actual light
-    });
-  });
-  return data;
-};
+const API_BASE_URL = "https://mycomatrix.in/api";
 
 const RoomDetail = () => {
   const { id } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
+  const { isAuthenticated, token } = useAuth();
   
   const [sensorData, setSensorData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -38,71 +22,175 @@ const RoomDetail = () => {
   const [roomInfo, setRoomInfo] = useState(null);
   const [activeSection, setActiveSection] = useState('iot-monitoring');
 
-  // ✅ Get room data from navigation state or use mock data as fallback
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        
-        // ✅ Get room data from navigation state
-        const roomDataFromState = location.state?.roomData;
-        
-        if (roomDataFromState) {
-          // ✅ Use actual room data from IoTMonitoring
-          const roomResponse = {
-            id: roomDataFromState.id,
-            name: roomDataFromState.name,
-            status: roomDataFromState.status,
-            type: 'Shiitake', // You can add this to your room model
-            capacity: '500kg', // You can add this to your room model
-            lastUpdated: new Date().toISOString(),
-            currentStats: {
-              temperature: roomDataFromState.temperature,
-              humidity: roomDataFromState.humidity,
-              co2: roomDataFromState.co2_level,
-              light: roomDataFromState.light_intensity
-            }
-          };
-          
-          setRoomInfo(roomResponse);
-          
-          // ✅ Generate sensor data based on actual room values
-          const sensorDataResponse = generateMockData(
-            roomDataFromState.temperature,
-            roomDataFromState.humidity,
-            roomDataFromState.co2_level,
-            roomDataFromState.light_intensity
-          );
-          setSensorData(sensorDataResponse);
-        } else {
-          // ✅ Fallback: Fetch room data from API if no state data
-          // You can implement API call here if needed
-          setError('Room data not found. Please go back and try again.');
-        }
-        
-      } catch (err) {
-        console.error('Error fetching room data:', err);
-        setError('Failed to load room data. Please try again later.');
-      } finally {
-        setIsLoading(false);
-      }
+  // ✅ Configure axios headers with auth token
+  const getAuthHeaders = () => {
+    return {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
     };
+  };
 
-    fetchData();
+  // ✅ Fetch room details with sensor data
+  const fetchRoomData = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // ✅ Get room data from navigation state
+      const roomDataFromState = location.state?.roomData;
+      
+      if (roomDataFromState) {
+        console.log('📦 Room data from state:', roomDataFromState);
+        
+        // ✅ Use actual room data from IoTMonitoring
+        const roomResponse = {
+          id: roomDataFromState.id,
+          name: roomDataFromState.name,
+          kit_id: roomDataFromState.kit_id,
+          status: roomDataFromState.status || 'optimal',
+          type: 'Shiitake',
+          capacity: '500kg',
+          lastUpdated: new Date().toISOString(),
+          currentStats: {
+            temperature: roomDataFromState.temperature || 23,
+            humidity: roomDataFromState.humidity || 80,
+            co2: roomDataFromState.co2_level || 1000,
+            light: roomDataFromState.light_intensity || 1200
+          }
+        };
+        
+        setRoomInfo(roomResponse);
+        
+        // ✅ Try to fetch real sensor data from API
+        try {
+          console.log('🔍 Fetching sensor data for kit_id:', roomDataFromState.kit_id);
+          const sensorResponse = await axios.get(
+            `${API_BASE_URL}/rooms/kit/${roomDataFromState.kit_id}/`,
+            { headers: getAuthHeaders() }
+          );
+          
+          console.log('✅ Real sensor data:', sensorResponse.data);
+          
+          if (sensorResponse.data.success && sensorResponse.data.latest_sensor_data) {
+            // ✅ Use real sensor data
+            const realData = sensorResponse.data.latest_sensor_data;
+            setSensorData([{
+              time: new Date().toLocaleTimeString(),
+              temperature: realData.temperature,
+              humidity: realData.humidity,
+              co2: realData.co2 || 1000,
+              light: realData.light || 1200
+            }]);
+          } else {
+            // ✅ Fallback to mock data
+            console.log('📊 Using mock data - no real sensor data available');
+            const mockData = generateMockData(
+              roomDataFromState.temperature || 23,
+              roomDataFromState.humidity || 80,
+              roomDataFromState.co2_level || 1000,
+              roomDataFromState.light_intensity || 1200
+            );
+            setSensorData(mockData);
+          }
+        } catch (sensorError) {
+          console.log('❌ Sensor API error, using mock data:', sensorError);
+          // ✅ Fallback to mock data if API fails
+          const mockData = generateMockData(
+            roomDataFromState.temperature || 23,
+            roomDataFromState.humidity || 80,
+            roomDataFromState.co2_level || 1000,
+            roomDataFromState.light_intensity || 1200
+          );
+          setSensorData(mockData);
+        }
+      } else {
+        // ✅ If no state data, try to fetch from API using room ID
+        console.log('🔍 No state data, fetching from API with room ID:', id);
+        try {
+          const roomResponse = await axios.get(
+            `${API_BASE_URL}/rooms/detail/${id}/`,
+            { headers: getAuthHeaders() }
+          );
+          
+          console.log('✅ Room data from API:', roomResponse.data);
+          setRoomInfo({
+            ...roomResponse.data,
+            currentStats: {
+              temperature: roomResponse.data.temperature || 23,
+              humidity: roomResponse.data.humidity || 80,
+              co2: roomResponse.data.co2_level || 1000,
+              light: roomResponse.data.light_intensity || 1200
+            }
+          });
+          
+          // Generate mock data based on room data
+          const mockData = generateMockData(
+            roomResponse.data.temperature || 23,
+            roomResponse.data.humidity || 80,
+            roomResponse.data.co2_level || 1000,
+            roomResponse.data.light_intensity || 1200
+          );
+          setSensorData(mockData);
+        } catch (apiError) {
+          console.error('❌ API Error:', apiError);
+          setError('Failed to load room data from server.');
+        }
+      }
+      
+    } catch (err) {
+      console.error('❌ Error fetching room data:', err);
+      setError('Failed to load room data. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ✅ Mock data generator (fallback)
+  const generateMockData = (baseTemp, baseHumidity, baseCO2, baseLight) => {
+    const data = [];
+    const timeSlots = [
+      '08:22 AM', '09:22 AM', '10:22 AM', '11:22 AM', '12:22 PM',
+      '01:22 PM', '02:22 PM', '03:22 PM', '04:22 PM', '05:22 PM',
+      '06:22 PM', '07:22 PM', '08:22 PM'
+    ];
     
-    // Set up polling (every 2 minutes)
-    const interval = setInterval(fetchData, 120000);
+    timeSlots.forEach((time, index) => {
+      data.push({
+        time: time,
+        temperature: Math.round((Math.random() * 3) + (baseTemp - 1)),
+        humidity: Math.round((Math.random() * 10) + (baseHumidity - 5)),
+        co2: Math.round((Math.random() * 200) + (baseCO2 - 100)),
+        light: Math.round((Math.random() * 300) + (baseLight - 150))
+      });
+    });
+    return data;
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated || !token) {
+      navigate('/login');
+      return;
+    }
+    
+    fetchRoomData();
+    
+    // Set up polling every 2 minutes for real-time updates
+    const interval = setInterval(fetchRoomData, 120000);
     
     return () => clearInterval(interval);
-  }, [id, location.state]);
+  }, [id, location.state, isAuthenticated, token, navigate]);
 
   // ✅ Handle back to monitoring page
   const handleBackClick = () => {
     navigate('/iot-monitoring');
   };
 
-  // Render different chart types based on data
+  // ✅ Refresh sensor data
+  const handleRefresh = () => {
+    fetchRoomData();
+  };
+
+  // Render different chart types
   const renderChart = (dataKey, color, name, unit = '', chartType = 'line') => {
     const ChartComponent = chartType === 'area' ? AreaChart : chartType === 'bar' ? BarChart : LineChart;
     const DataComponent = chartType === 'area' ? Area : chartType === 'bar' ? Bar : Line;
@@ -113,10 +201,10 @@ const RoomDetail = () => {
           <div className="d-flex justify-content-between align-items-center">
             <h6 className="mb-0 fw-bold">{name}</h6>
             <Badge bg="light" text="dark" className="px-2 py-1">
-              {sensorData.length > 0 && `${sensorData[0][dataKey]}${unit}`}
+              {sensorData.length > 0 && `${sensorData[sensorData.length - 1][dataKey]}${unit}`}
             </Badge>
           </div>
-        </Card.Header>
+        </Card.Header>  
         <Card.Body className="pt-0">
           <div style={{ height: '200px' }}>
             <ResponsiveContainer width="100%" height="100%">
@@ -311,10 +399,7 @@ const RoomDetail = () => {
             <Alert variant="warning" className="my-4">
               Room information not available.
             </Alert>
-            <Button variant="primary" onClick={handleBackClick}>
-              <FiArrowLeft className="me-2" />
-              Back to Monitoring
-            </Button>
+          
           </div>
         </div>
       </div>
@@ -330,20 +415,7 @@ const RoomDetail = () => {
           {/* Header with Back Button */}
           <div className="d-flex justify-content-between align-items-center mb-4">
             <div className="d-flex align-items-center">
-              <Button 
-                variant="outline-secondary" 
-                className="me-3 d-flex align-items-center"
-                onClick={handleBackClick}
-                style={{ 
-                  border: 'none',
-                  backgroundColor: '#f8f9fa',
-                  borderRadius: '8px',
-                  padding: '8px 12px'
-                }}
-              >
-                <FiArrowLeft className="me-2" />
-                Back to Monitoring
-              </Button>
+         
               <div>
                 <h2 className="mb-1">{roomInfo.name}</h2>
                 <p className="text-muted mb-0">
@@ -352,7 +424,14 @@ const RoomDetail = () => {
                 </p>
               </div>
             </div>
-            <div>
+            <div className="d-flex gap-2">
+              <Button 
+                variant="outline-primary" 
+                size="sm"
+                onClick={handleRefresh}
+              >
+                Refresh Data
+              </Button>
               <Badge bg="success" className="px-3 py-2">
                 <FiActivity className="me-1" />
                 {roomInfo?.status?.toUpperCase() || 'OPTIMAL'}
@@ -404,12 +483,8 @@ const RoomDetail = () => {
                       <div className="fw-bold">{roomInfo.id}</div>
                     </div>
                     <div className="col-6 mb-3">
-                      <small className="text-muted">Status</small>
-                      <div>
-                        <Badge bg="success" className="px-2">
-                          {roomInfo.status}
-                        </Badge>
-                      </div>
+                      <small className="text-muted">Kit ID</small>
+                      <div className="fw-bold">{roomInfo.kit_id}</div>
                     </div>
                   </div>
                 </Card.Body>

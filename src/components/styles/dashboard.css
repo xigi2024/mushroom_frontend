@@ -269,6 +269,40 @@
   }
 }
 
+/* Tablet portrait mode (600px to 768px) */
+@media (min-width: 600px) and (max-width: 768px) {
+    .main-content {
+        margin-left: 0px; /* Example: You can adjust margins for tablets */
+    }
+    
+    .tab-item {
+        width: 100%; /* Make tabs take full width */
+        padding: 15px; /* Adjust padding for tablets */
+        font-size: 16px; /* Increase font size for readability */
+    }
+}
+
+/* Tablet landscape mode (768px to 1024px) */
+@media (min-width: 768px) and (max-width: 1024px) {
+    .main-content {
+        margin-left: 0px; /* Add a small margin for landscape mode */
+    }
+
+    .tab-item {
+        width: 48%; /* Two columns layout in landscape */
+        padding: 12px;
+        font-size: 15px;
+    }
+}
+@media (min-width: 600px) and (max-width: 900px) {
+    .dashboard-content {
+        margin-left: 240px;
+    }
+    .topbar {
+        left: 240px;
+    }
+}
+
 /* Additional Component Styles */
 .room-card {
   border: none;

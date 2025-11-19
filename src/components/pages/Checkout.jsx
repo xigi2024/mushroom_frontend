@@ -8,21 +8,17 @@ const Checkout = () => {
   const navigate = useNavigate();
   const { cart, getTotalPrice, getTotalItems, clearCart, isAuthenticated } = useCart();
 
-  // ✅ IMPORTANT: Location state check pannu
   const locationState = location.state || {};
   const fromCart = locationState.fromCart || false;
 
-  // ✅ Check which route la irukkom
   let cartTotal, totalItems, totalAmount;
   let orderItems = [];
 
   if (fromCart) {
-    // ✅ Cart la irundhu vanthom - cart data use pannu
     cartTotal = getTotalPrice();
     totalItems = getTotalItems();
     totalAmount = cartTotal;
 
-    // Cart items prepare pannu
     orderItems = cart?.items?.map(item => ({
       product: item.product?.name || 'Product',
       product_id: item.product?.id,
@@ -31,12 +27,10 @@ const Checkout = () => {
       total: (parseFloat(item.price || item.product?.price || 0) * (item.qty || 1))
     })) || [];
   } else {
-    // ✅ Product details la irundhu vanthom - location state use pannu
     cartTotal = locationState.total || 0;
     totalItems = locationState.quantity || 1;
     totalAmount = locationState.total || 0;
 
-    // Single product prepare pannu
     orderItems = [{
       product: locationState.product || 'Product',
       product_id: locationState.product_id,
@@ -58,7 +52,6 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // ✅ Auto-fill user data if logged in
   useEffect(() => {
     if (isAuthenticated) {
       const userData = JSON.parse(localStorage.getItem('user') || '{}');
@@ -71,7 +64,6 @@ const Checkout = () => {
     }
   }, [isAuthenticated]);
 
-  // ✅ Check if user directly checkout ku vantha (cart empty ah iruntha)
   useEffect(() => {
     if (fromCart && totalItems === 0) {
       alert('Your cart is empty. Redirecting to products page.');
@@ -87,15 +79,14 @@ const Checkout = () => {
     }));
   };
 
-  // ✅ Payment success la cart clear pannu (only for cart checkout)
+  // ✅ FIXED: Payment Success Handler
   const handlePaymentSuccess = (orderDetails) => {
     console.log('✅ Payment successful - Order Details:', orderDetails);
 
     if (fromCart) {
-      clearCart(); // Cart clear pannu only if from cart
+      clearCart();
     }
 
-    // Show success message with order details
     const successMessage = orderDetails.payment_method === 'cod'
       ? `🎉 COD Order Placed Successfully! 
 Order ID: ORD-${orderDetails.db_order_id}
@@ -117,7 +108,7 @@ Thank you for your purchase!`;
     });
   };
 
-  // ✅ Razorpay Script Load Pannu
+  // ✅ FIXED: Razorpay Script Load
   const loadRazorpayScript = () => {
     return new Promise((resolve) => {
       if (window.Razorpay) {
@@ -139,10 +130,10 @@ Thank you for your purchase!`;
     });
   };
 
-  // ✅ COD Order Create Pannu - FIXED VERSION
+  // ✅ FIXED: COD Order Creation
   const createCODOrder = async () => {
     try {
-      const token = localStorage.getItem('access_token');
+      const token = localStorage.getItem('access_token') || localStorage.getItem('access');
       if (!token) {
         throw new Error('User not authenticated for COD order');
       }
@@ -174,7 +165,8 @@ Thank you for your purchase!`;
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
 
       const orderData = await response.json();
@@ -199,7 +191,7 @@ Thank you for your purchase!`;
     }
   };
 
-  // ✅ Payment Process
+  // ✅ FIXED: Payment Process - MAIN FIX
   const handlePayment = async () => {
     try {
       setLoading(true);
@@ -213,6 +205,7 @@ Thank you for your purchase!`;
       const scriptLoaded = await loadRazorpayScript();
       if (!scriptLoaded) {
         setError('Payment system failed to load. Please refresh and try again.');
+        setLoading(false);
         return;
       }
 
@@ -225,9 +218,7 @@ Thank you for your purchase!`;
         },
         body: JSON.stringify({
           amount: totalAmount,
-          currency: 'INR',
-          cart_id: fromCart ? cart?.id : null,
-          order_type: fromCart ? 'cart' : 'single_product'
+          currency: 'INR'
         })
       });
 
@@ -242,85 +233,61 @@ Thank you for your purchase!`;
         throw new Error(orderData.error || 'Failed to create Razorpay order');
       }
 
-      // Step 3: Razorpay options setup
+      // Step 3: Razorpay options setup - FIXED VERSION
+      const token = localStorage.getItem('access_token') || localStorage.getItem('access');
+      
       const options = {
-        key: 'MbYEQvY5NjqTFnAxSobVm1zR',
+        key: 'rzp_live_RckdZPe20EQiap', // Your Razorpay key
         amount: orderData.amount,
         currency: orderData.currency,
-        name: 'Mushroom Store',
+        name: 'MycoMatrix',
         description: fromCart ? `Order for ${totalItems} items` : `Order for ${locationState.product}`,
         order_id: orderData.order_id,
 
-        // ✅ Payment Success Handler - UPDATED WITH ORDER CONFIRMATION
+        // ✅ FIXED: Payment handler with complete payload
         handler: async function (response) {
           console.log('💰 Razorpay payment response:', response);
 
           try {
-            // Step 4: Verify payment with backend and CREATE ORDER
-            const token = localStorage.getItem('access_token');
-            console.log('🔐 Using token for verification:', token ? 'Token present' : 'No token');
-
+            // ✅ FIXED: Complete verification payload
             const verifyPayload = {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_order_id: response.razorpay_order_id,
               razorpay_signature: response.razorpay_signature,
-              total_amount: totalAmount,
-              order_type: fromCart ? 'cart' : 'single_product',
-              items: orderItems,
-              user_email: formData.email,
-              shipping_address: {
-                name: formData.name,
-                phone: formData.phone,
-                address: formData.address,
-                city: formData.city,
-                pincode: formData.pincode
-              }
+              total_amount: totalAmount, // ✅ REQUIRED
+              items: orderItems, // ✅ REQUIRED
+              order_type: fromCart ? 'cart' : 'single_product' // ✅ REQUIRED
             };
 
-            console.log('📤 Sending verification & order creation payload:', verifyPayload);
+            console.log('📤 Sending verification payload:', verifyPayload);
 
             const verifyResponse = await fetch('https://mycomatrix.in/api/verify-payment/', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${token}` // ✅ Always send token
               },
               body: JSON.stringify(verifyPayload)
             });
 
-            if (!verifyResponse.ok) {
-              throw new Error(`HTTP error! status: ${verifyResponse.status}`);
-            }
+            const result = await verifyResponse.json();
+            console.log('📥 Verification response:', result);
 
-            const verifyData = await verifyResponse.json();
-            console.log('📥 Verification & Order Creation Response:', verifyData);
-
-            if (verifyData.status === 'success') {
-              console.log('✅ Payment verified and ORDER CREATED successfully');
-
-              // ✅ IMPORTANT: Check if order actually created in database
-              if (verifyData.db_order_id) {
-                console.log('🎉 Order confirmed in database with ID:', verifyData.db_order_id);
-
-                handlePaymentSuccess({
-                  payment_id: response.razorpay_payment_id,
-                  razorpay_order_id: response.razorpay_order_id,
-                  db_order_id: verifyData.db_order_id,
-                  amount: totalAmount,
-                  payment_method: 'razorpay',
-                  order_status: verifyData.order_status || 'completed',
-                  payment_status: verifyData.payment_status || 'paid',
-                  created_at: verifyData.created_at || new Date().toISOString()
-                });
-              } else {
-                console.error('❌ Order creation failed - no db_order_id received');
-                alert('❌ Order creation failed. Please contact support with payment ID: ' + response.razorpay_payment_id);
-                setLoading(false);
-              }
+            if (result.status === 'success') {
+              console.log('✅ Payment verified successfully');
+              
+              handlePaymentSuccess({
+                payment_id: response.razorpay_payment_id,
+                razorpay_order_id: response.razorpay_order_id,
+                db_order_id: result.db_order_id,
+                db_payment_id: result.db_payment_id,
+                amount: totalAmount,
+                payment_method: 'razorpay',
+                order_status: result.order_status || 'completed',
+                payment_status: result.payment_status || 'paid'
+              });
             } else {
-              console.error('❌ Payment verification failed:', verifyData.error);
-              alert(`❌ Payment Verification Failed: ${verifyData.error}`);
-              setLoading(false);
+              throw new Error(result.error || 'Payment verification failed');
             }
           } catch (verifyError) {
             console.error('❌ Verification API error:', verifyError);
@@ -329,19 +296,17 @@ Thank you for your purchase!`;
           }
         },
 
-        // ✅ Prefill customer details
+        // Prefill customer details
         prefill: {
           name: formData.name,
           email: formData.email,
           contact: formData.phone
         },
 
-        // ✅ Theme
         theme: {
           color: '#28a745'
         },
 
-        // ✅ Modal close handler
         modal: {
           ondismiss: function () {
             console.log('❌ Payment modal closed by user');
@@ -350,37 +315,9 @@ Thank you for your purchase!`;
         }
       };
 
-      // Step 5: Open Razorpay checkout with updated initialization
+      // Step 4: Open Razorpay checkout
       console.log('🎯 Opening Razorpay checkout...');
-      
-      // Add payment.failed handler to options if not already present
-      if (!options.handler) {
-        options.handler = function(response) {
-          console.log('Razorpay payment response:', response);
-        };
-      }
-      
-      // Add payment.failed event to options
-      options.handler.payment_failed = function(response) {
-        console.error('❌ Payment failed:', response.error);
-        alert(`❌ Payment Failed: ${response.error.description}`);
-        setLoading(false);
-      };
-      
-      // Initialize and open Razorpay with a single options object
-      const razorpay = new window.Razorpay({
-        ...options,
-        // Ensure all event handlers are included in the single options object
-        handler: options.handler,
-        modal: {
-          ...options.modal,
-          ondismiss: function() {
-            console.log('❌ Payment modal closed by user');
-            setLoading(false);
-          }
-        }
-      });
-      
+      const razorpay = new window.Razorpay(options);
       razorpay.open();
 
     } catch (error) {
@@ -401,22 +338,22 @@ Thank you for your purchase!`;
       return;
     }
 
-    // Phone validation
     const phoneRegex = /^[0-9]{10}$/;
     if (!phoneRegex.test(formData.phone)) {
       setError('Please enter a valid 10-digit phone number');
       return;
     }
 
-    // Amount zero ah iruntha stop pannu
     if (totalAmount === 0) {
       setError('Invalid order amount. Please try again.');
       return;
     }
 
-    // Check if user is authenticated for online payments
-    if (formData.paymentMethod !== 'cod' && !isAuthenticated) {
-      setError('Please login to proceed with online payment');
+    // Check authentication
+    const token = localStorage.getItem('access_token') || localStorage.getItem('access');
+    if (!token) {
+      setError('Please login to proceed with payment');
+      navigate('/login');
       return;
     }
 
@@ -424,13 +361,6 @@ Thank you for your purchase!`;
     if (formData.paymentMethod === 'cod') {
       try {
         setLoading(true);
-
-        if (!isAuthenticated) {
-          setError('Please login to place COD order');
-          setLoading(false);
-          return;
-        }
-
         console.log('🔄 Processing COD order...');
         const codResult = await createCODOrder();
 
@@ -452,7 +382,6 @@ Thank you for your purchase!`;
     await handlePayment();
   };
 
-  // Check if amount is zero or invalid
   if (totalAmount === 0) {
     return (
       <Container className="my-5">
@@ -475,11 +404,11 @@ Thank you for your purchase!`;
       <h2 className="text-center mb-4">Checkout</h2>
 
       <Row>
-        {/* Shipping Information */}
         <Col md={8}>
           <Card className="p-4 mb-4">
             <h4 className="mb-4">Shipping Information</h4>
             <Form onSubmit={handleSubmit}>
+              {/* Form fields remain same */}
               <Row>
                 <Col md={6}>
                   <Form.Group className="mb-3">
@@ -524,9 +453,6 @@ Thank you for your purchase!`;
                   pattern="[0-9]{10}"
                   maxLength="10"
                 />
-                <Form.Text className="text-muted">
-                  Must be 10 digits without country code
-                </Form.Text>
               </Form.Group>
 
               <Form.Group className="mb-3">
@@ -539,7 +465,7 @@ Thank you for your purchase!`;
                   value={formData.address}
                   onChange={handleInputChange}
                   required
-                  placeholder="Enter your complete shipping address with street, area, and landmark"
+                  placeholder="Enter your complete shipping address"
                 />
               </Form.Group>
 
@@ -603,13 +529,7 @@ Thank you for your purchase!`;
                   value="cod"
                   checked={formData.paymentMethod === 'cod'}
                   onChange={handleInputChange}
-                  disabled={!isAuthenticated}
                 />
-                {!isAuthenticated && (
-                  <small className="text-muted d-block mt-1">
-                    Login required for Cash on Delivery
-                  </small>
-                )}
               </Form.Group>
 
               <Button
@@ -629,7 +549,6 @@ Thank you for your purchase!`;
                     : `Proceed to Pay ₹${totalAmount.toFixed(2)}`
                 )}
               </Button>
-
             </Form>
           </Card>
           {error && (
@@ -639,16 +558,12 @@ Thank you for your purchase!`;
           )}
         </Col>
 
-
-
-        {/* 🟢 Order Summary */}
         <Col md={4}>
           <Card className="p-4">
             <h4 className="mb-4">
               Order Summary {fromCart ? `(${totalItems} items)` : ''}
             </h4>
 
-            {/* Order Items List */}
             {orderItems.map((item, index) => (
               <div key={index} className="d-flex justify-content-between mb-2">
                 <div className="flex-grow-1">
@@ -662,42 +577,29 @@ Thank you for your purchase!`;
             ))}
 
             <hr />
-
             <div className="d-flex justify-content-between mb-2">
               <span>Subtotal {fromCart ? `(${totalItems} items)` : ''}</span>
               <span>₹{cartTotal.toFixed(2)}</span>
             </div>
-
             <div className="d-flex justify-content-between mb-2">
               <span>Shipping</span>
               <span className="text-success">FREE</span>
             </div>
-
             <div className="d-flex justify-content-between mb-2">
               <span>Tax</span>
               <span className="text-muted">Included</span>
             </div>
-
             <hr />
-
             <div className="d-flex justify-content-between mb-4 fw-bold fs-5">
               <span>Total Amount</span>
               <span>₹{totalAmount.toFixed(2)}</span>
             </div>
-
-            {!isAuthenticated && formData.paymentMethod !== 'cod' && (
-              <Alert variant="warning" className="small">
-                <strong>Login Required:</strong> Please login to save your order history
-              </Alert>
-            )}
 
             {formData.paymentMethod === 'cod' && (
               <Alert variant="info" className="small">
                 <strong>Cash on Delivery:</strong> Pay when you receive your order
               </Alert>
             )}
-
-
           </Card>
         </Col>
       </Row>

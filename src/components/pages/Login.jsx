@@ -104,7 +104,11 @@ const Login = () => {
         // Navigate to home page after a short delay
         setTimeout(() => {
           console.log('🏠 Redirecting to home page');
-          navigate('/', { replace: true });
+if (result.user.role === "admin") {
+  navigate("/admin-dashboard", { replace: true });
+} else {
+  navigate("/user-dashboard", { replace: true });
+}
         }, hasGuestItems ? 2000 : 1000); // Longer delay if there were items to sync
 
       } else {

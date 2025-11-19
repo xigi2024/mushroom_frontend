@@ -23,6 +23,7 @@ import AdminDashboard from './components/pages/AdminDashboard'
 import UserDashboard from './components/pages/UserDashboard'
 import IoTMonitoring from './components/pages/IoTMonitoring'
 import ProductOrder from './components/pages/ProductOrder'
+import AdminProductOrder from './components/pages/AdminProductOrder'
 import Accounts from './components/pages/Accounts'
 import Settings from './components/pages/Settings'
 import PaymentHistory from './components/pages/PaymentHistory'
@@ -143,7 +144,7 @@ function AppContent() {
           element={
             <ProtectedRoute>
               <Layout activeSection="products" setActiveSection={() => {}} userRole="admin">
-                <ProductOrder userRole="admin" />
+                <AdminProductOrder userRole="admin" />
               </Layout>
             </ProtectedRoute>
           } 

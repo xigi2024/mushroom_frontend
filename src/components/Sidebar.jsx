@@ -5,7 +5,10 @@ import './styles/sidebar.css';
 import { Link } from 'react-router-dom';
 
 
-const Sidebar = ({ activeSection, setActiveSection, userRole = 'user' }) => {
+const Sidebar = ({ activeSection, setActiveSection }) => {
+  const storedUser = localStorage.getItem("user");
+  const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+  const userRole = parsedUser?.role?.toLowerCase() || "user";
   const navigate = useNavigate();
   const location = useLocation();
   const [user, setUser] = useState(null);
@@ -23,7 +26,7 @@ const Sidebar = ({ activeSection, setActiveSection, userRole = 'user' }) => {
     { id: 'iot-monitoring', icon: FiMonitor, label: 'IoT Monitoring', path: '/admin/iot-monitoring' },
     { id: 'products', icon: FiPackage, label: 'Products Order', path: '/admin/product-order' },
     { id: 'accounts', icon: FiUser, label: 'Accounts', path: '/accounts' },
-    { id: 'settings', icon: FiSettings, label: 'Settings', path: '/settings' },
+    //{ id: 'settings', icon: FiSettings, label: 'Settings', path: '/settings' },
     { id: 'payment', icon: FiCreditCard, label: 'Payment History', path: '/payment-history' }
   ];
 
@@ -70,13 +73,19 @@ const Sidebar = ({ activeSection, setActiveSection, userRole = 'user' }) => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('auth_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('user');
-    localStorage.removeItem('userRole');
-    navigate('/login');
-  };
+const handleLogout = () => {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
+  localStorage.removeItem('user');
+  localStorage.removeItem('userRole');
+
+  // optional: remove guest cart
+  localStorage.removeItem('guest_cart');
+
+  navigate('/login');
+  window.location.reload(); // Force UI reset
+};
+
 
   const getUserInitials = () => {
     if (!user) return 'U';
