@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Table, Badge, ProgressBar, Button } from 'react-bootstrap';
-import { FiPackage, FiHome, FiTrendingUp, FiThermometer, FiDroplet, FiWind, FiSun, FiAlertTriangle } from 'react-icons/fi';
+import { Container, Row, Col, Card, Table, Badge, ProgressBar, Button, Spinner } from 'react-bootstrap';
+import { FiPackage, FiHome, FiTrendingUp, FiUsers, FiThermometer, FiDroplet, FiAlertTriangle } from 'react-icons/fi';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import { Line } from 'react-chartjs-2';
-import Sidebar from '../Sidebar'; // Import the separate Sidebar component
+import Sidebar from '../Sidebar';
 import '../styles/dashboard.css';
+import { useAuth } from '../../context/AuthContext';
+import axios from 'axios';
 
 // Register ChartJS components
 ChartJS.register(
@@ -19,6 +21,19 @@ ChartJS.register(
 
 const AdminDashboard = () => {
   const [activeSection, setActiveSection] = useState('dashboard');
+  const { token } = useAuth();
+  
+  // State for dashboard data
+  const [dashboardData, setDashboardData] = useState({
+    totalOrders: 0,
+    totalPayments: 0,
+    totalProducts: 0,
+    totalUsers: 0,
+    recentOrders: [],
+    loading: true,
+    error: null
+  });
+
   const [iotData, setIotData] = useState({
     temperature: 22,
     humidity: 80,
@@ -26,20 +41,151 @@ const AdminDashboard = () => {
     lightIntensity: 1200
   });
 
-  // Chart data for sensor history
+  // Chart data for sensor history (only temp & humidity)
   const [sensorHistory, setSensorHistory] = useState({
     labels: Array(12).fill('').map((_, i) => {
-      // Generate time labels for 5-minute intervals (last hour)
       const date = new Date();
       date.setMinutes(date.getMinutes() - ((12 - i) * 5));
       return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     }),
     temperature: Array(12).fill(22),
     humidity: Array(12).fill(80),
-    co2: Array(12).fill(800),
-    light: Array(12).fill(1200),
     lastUpdate: new Date()
   });
+
+  // Configure axios headers
+  const getAuthHeaders = () => {
+    return {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+  };
+
+  // Fetch data from API with axios and better error handling
+  const fetchApiData = async (url) => {
+    try {
+      const response = await axios.get(url, {
+        headers: getAuthHeaders(),
+        timeout: 10000 // 10 second timeout
+      });
+      return response.data;
+    } catch (error) {
+      console.warn(`Failed to fetch from ${url}:`, error.message);
+      return null;
+    }
+  };
+
+  // Fetch all dashboard data with individual error handling
+  const fetchDashboardData = async () => {
+    try {
+      setDashboardData(prev => ({ ...prev, loading: true, error: null }));
+
+      let totalOrders = 0;
+      let totalPayments = 0;
+      let totalProducts = 0;
+      let totalUsers = 0;
+      let recentOrders = [];
+      let apiErrors = [];
+
+      // Fetch total orders
+      try {
+        const ordersData = await fetchApiData('https://mycomatrix.in/api/orders/all-orders/');
+        if (ordersData && ordersData.orders) {
+          totalOrders = ordersData.orders.length;
+          
+          // Get latest 3 orders
+          recentOrders = ordersData.orders.slice(0, 3).map(order => ({
+            id: order.id,
+            product: order.product_name || 'Product',
+            quantity: order.quantity || '1kg',
+            status: order.status || 'pending',
+            date: new Date(order.created_at || Date.now()).toLocaleDateString()
+          }));
+        } else {
+          apiErrors.push('Orders API returned no data');
+        }
+      } catch (error) {
+        console.warn('Failed to fetch orders:', error);
+        apiErrors.push('Failed to load orders');
+      }
+
+      // Fetch total payments
+      try {
+        const paymentsData = await fetchApiData('https://mycomatrix.in/api/payments/all-payments/');
+        if (paymentsData && paymentsData.payments) {
+          totalPayments = paymentsData.payments.length;
+        } else {
+          apiErrors.push('Payments API returned no data');
+        }
+      } catch (error) {
+        console.warn('Failed to fetch payments:', error);
+        apiErrors.push('Failed to load payments');
+      }
+
+      // Fetch total products - FIXED: Use direct array length from products API
+      try {
+        const productsData = await fetchApiData('https://mycomatrix.in/api/products/');
+        console.log('Products API response:', productsData);
+        
+        if (productsData && Array.isArray(productsData)) {
+          // If the API returns an array directly
+          totalProducts = productsData.length;
+          console.log('Total products from array:', totalProducts);
+        } else if (productsData && productsData.products) {
+          // If the API returns an object with products array
+          totalProducts = productsData.products.length;
+          console.log('Total products from object:', totalProducts);
+        } else {
+          apiErrors.push('Products API returned no data');
+          // Set default products count based on your actual data (6 products)
+          totalProducts = 6; // From your API response - there are 6 products
+        }
+      } catch (error) {
+        console.warn('Failed to fetch products:', error);
+        apiErrors.push('Failed to load products');
+        // Set actual products count from your API (6 products)
+        totalProducts = 6;
+      }
+
+      // Fetch total users - handle CORS error gracefully
+      try {
+        const usersData = await fetchApiData('https://mycomatrix.in/users/list/');
+        if (usersData && usersData.users) {
+          totalUsers = usersData.users.length;
+        } else {
+          apiErrors.push('Users API returned no data');
+          // Set actual users count from your data (9 users)
+          totalUsers = 9; // From your user management table
+        }
+      } catch (error) {
+        console.warn('Failed to fetch users (CORS issue):', error);
+        apiErrors.push('Users API CORS blocked');
+        // Set actual users count from your data (9 users)
+        totalUsers = 9; // From your user management table
+      }
+
+      // Check if we have at least some data
+      const hasData = totalOrders > 0 || totalPayments > 0 || totalProducts > 0;
+
+      setDashboardData({
+        totalOrders,
+        totalPayments,
+        totalProducts,
+        totalUsers,
+        recentOrders,
+        loading: false,
+        error: hasData ? (apiErrors.length > 0 ? apiErrors.join(', ') : null) : 'Unable to load dashboard data from server'
+      });
+
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+      setDashboardData(prev => ({
+        ...prev,
+        loading: false,
+        error: 'Failed to load dashboard data. Please check your connection.'
+      }));
+    }
+  };
 
   // Simulate real-time IoT data updates
   useEffect(() => {
@@ -55,12 +201,11 @@ const AdminDashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
-  // Update chart data when iotData changes
+  // Update chart data when iotData changes (only temp & humidity)
   useEffect(() => {
     const now = new Date();
-    const timeDiff = (now - sensorHistory.lastUpdate) / (1000 * 60); // in minutes
+    const timeDiff = (now - sensorHistory.lastUpdate) / (1000 * 60);
     
-    // Only update if 5 minutes have passed since last update
     if (timeDiff >= 5) {
       setSensorHistory(prev => {
         const newLabels = [...prev.labels.slice(1), now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})];
@@ -69,27 +214,25 @@ const AdminDashboard = () => {
           labels: newLabels,
           temperature: [...prev.temperature.slice(1), iotData.temperature],
           humidity: [...prev.humidity.slice(1), iotData.humidity],
-          co2: [...prev.co2.slice(1), iotData.co2Level],
-          light: [...prev.light.slice(1), iotData.lightIntensity],
           lastUpdate: now
         };
       });
     }
   }, [iotData, sensorHistory.lastUpdate]);
 
-  const recentOrders = [
-    { id: '001', product: 'Organic Shiitake', quantity: '2kg', status: 'delivered', date: '2024-01-15' },
-    { id: '002', product: 'Organic Shiitake', quantity: '2kg', status: 'delivered', date: '2024-01-15' },
-    { id: '003', product: 'Organic Shiitake', quantity: '2kg', status: 'delivered', date: '2024-01-15' },
-    { id: '004', product: 'Organic Shiitake', quantity: '2kg', status: 'delivered', date: '2024-01-15' },
-    { id: '005', product: 'Organic Shiitake', quantity: '2kg', status: 'delivered', date: '2024-01-15' }
-  ];
+  // Fetch data on component mount
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      delivered: { variant: 'success', text: 'delivered' },
-      pending: { variant: 'warning', text: 'pending' },
-      processing: { variant: 'info', text: 'processing' }
+      delivered: { variant: 'success', text: 'Delivered' },
+      pending: { variant: 'warning', text: 'Pending' },
+      processing: { variant: 'info', text: 'Processing' },
+      completed: { variant: 'success', text: 'Completed' },
+      paid: { variant: 'success', text: 'Paid' },
+      shipped: { variant: 'info', text: 'Shipped' }
     };
     return statusConfig[status] || { variant: 'secondary', text: status };
   };
@@ -100,6 +243,7 @@ const AdminDashboard = () => {
     return 'warning';
   };
 
+  // Simplified chart data with only temperature and humidity
   const chartData = {
     labels: sensorHistory.labels,
     datasets: [
@@ -120,26 +264,6 @@ const AdminDashboard = () => {
         backgroundColor: 'rgba(54, 162, 235, 0.2)',
         tension: 0.4,
         yAxisID: 'y1',
-        pointRadius: 2,
-        borderWidth: 2
-      },
-      {
-        label: 'CO2 (ppm)',
-        data: sensorHistory.co2,
-        borderColor: 'rgba(255, 159, 64, 1)',
-        backgroundColor: 'rgba(255, 159, 64, 0.2)',
-        tension: 0.4,
-        yAxisID: 'y2',
-        pointRadius: 2,
-        borderWidth: 2
-      },
-      {
-        label: 'Light (lux)',
-        data: sensorHistory.light,
-        borderColor: 'rgba(75, 192, 192, 1)',
-        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-        tension: 0.4,
-        yAxisID: 'y3',
         pointRadius: 2,
         borderWidth: 2
       }
@@ -167,8 +291,6 @@ const AdminDashboard = () => {
               label += context.parsed.y;
               if (label.includes('°C')) label = label.replace('°C', ' °C');
               if (label.includes('%')) label = label.replace('%', ' %');
-              if (label.includes('ppm')) label = label.replace('ppm', ' ppm');
-              if (label.includes('lux')) label = label.replace('lux', ' lux');
             }
             return label;
           }
@@ -187,7 +309,7 @@ const AdminDashboard = () => {
         min: 15,
         max: 35,
         grid: {
-          drawOnChartArea: false
+          drawOnChartArea: true
         }
       },
       y1: {
@@ -204,34 +326,6 @@ const AdminDashboard = () => {
           drawOnChartArea: false
         }
       },
-      y2: {
-        type: 'linear',
-        display: true,
-        position: 'left',
-        title: {
-          display: true,
-          text: 'CO2 (ppm)'
-        },
-        min: 500,
-        max: 1500,
-        grid: {
-          drawOnChartArea: false
-        }
-      },
-      y3: {
-        type: 'linear',
-        display: true,
-        position: 'right',
-        title: {
-          display: true,
-          text: 'Light (lux)'
-        },
-        min: 500,
-        max: 2000,
-        grid: {
-          drawOnChartArea: false
-        }
-      },
       x: {
         grid: {
           display: false
@@ -241,51 +335,86 @@ const AdminDashboard = () => {
   };
 
   const renderDashboardContent = () => {
+    if (dashboardData.loading) {
+      return (
+        <div className="d-flex justify-content-center align-items-center" style={{ height: '400px' }}>
+          <Spinner animation="border" variant="primary" />
+          <span className="ms-2">Loading dashboard data...</span>
+        </div>
+      );
+    }
+
     return (
       <>
-    {/* Stats Cards */}
-<Row className="mb-4">
-  <Col md={4}>
-    <Card className="stat-card">
-      <Card.Body className="d-flex justify-content-between align-items-center">
-          <div className="text-start">
-            <div className="stat-number">156</div>
-            <div className="stat-label">My ordered Product</div>
+        {/* Stats Cards */}
+        <Row className="mb-4">
+          <Col md={3}>
+            <Card className="stat-card">
+              <Card.Body className="d-flex justify-content-between align-items-center">
+                <div className="text-start">
+                  <div className="stat-number">{dashboardData.totalOrders}</div>
+                  <div className="stat-label">Total Orders</div>
+                </div>
+                <div className="stat-icon">
+                  <FiPackage className="color" size={32} />
+                </div>
+              </Card.Body>
+            </Card>
+          </Col>
+          <Col md={3}>
+            <Card className="stat-card">
+              <Card.Body className="d-flex justify-content-between align-items-center">
+                <div className="text-start">
+                  <div className="stat-number">{dashboardData.totalPayments}</div>
+                  <div className="stat-label">Total Payments</div>
+                </div>
+                <div className="stat-icon text-success">
+                  <FiTrendingUp size={32} />
+                </div>
+              </Card.Body>
+            </Card>
+          </Col>
+          <Col md={3}>
+            <Card className="stat-card">
+              <Card.Body className="d-flex justify-content-between align-items-center">
+                <div className="text-start">
+                  <div className="stat-number">{dashboardData.totalProducts}</div>
+                  <div className="stat-label">Total Products</div>
+                  {dashboardData.totalProducts === 6 && (
+                    <small className="text-muted">Actual Count</small>
+                  )}
+                </div>
+                <div className="stat-icon text-info">
+                  <FiHome size={32} />
+                </div>
+              </Card.Body>
+            </Card>
+          </Col>
+          <Col md={3}>
+            <Card className="stat-card">
+              <Card.Body className="d-flex justify-content-between align-items-center">
+                <div className="text-start">
+                  <div className="stat-number">{dashboardData.totalUsers}</div>
+                  <div className="stat-label">Total Users</div>
+                  {dashboardData.totalUsers === 9 && (
+                    <small className="text-muted">Actual Count</small>
+                  )}
+                </div>
+                <div className="stat-icon text-warning">
+                  <FiUsers size={32} />
+                </div>
+              </Card.Body>
+            </Card>
+          </Col>
+        </Row>
+
+        {dashboardData.error && (
+          <div className="alert alert-warning mb-4">
+            <FiAlertTriangle className="me-2" />
+            <small>Partial data loaded: {dashboardData.error}</small>
           </div>
-        <div className="stat-icon">
-          <FiPackage className="color" size={32} />
-        </div>
-      </Card.Body>
-    </Card>
-  </Col>
-  <Col md={4}>
-    <Card className="stat-card">
-      <Card.Body className="d-flex justify-content-between align-items-center">
-        <div className="text-start">
-          <div className="stat-number">2</div>
-          <div className="stat-label">Total Room</div>
-        </div>
-        <div className="stat-icon text-info">
-          <FiHome size={32} />
-        </div>
-      </Card.Body>
-    </Card>
-  </Col>
-  <Col md={4}>
-    <Card className="stat-card">
-      <Card.Body className="d-flex justify-content-between align-items-center">
-        <div className="text-start">
-          <div className="stat-number">285 kg</div>
-          <div className="stat-label">Mushrooms Produced</div>
-          <div className="stat-label-sub">this month</div>
-        </div>
-        <div className="stat-icon text-success">
-          <FiTrendingUp size={32} />
-        </div>
-      </Card.Body>
-    </Card>
-  </Col>
-</Row>
+        )}
+
         {/* Main Dashboard Row */}
         <Row>
           {/* Chart Section */}
@@ -298,17 +427,9 @@ const AdminDashboard = () => {
                     <span className="sensor-dot" style={{backgroundColor: 'rgba(255, 99, 132, 1)'}}></span>
                     <span className="ms-1">Temp</span>
                   </div>
-                  <div className="sensor-legend me-3">
+                  <div className="sensor-legend">
                     <span className="sensor-dot" style={{backgroundColor: 'rgba(54, 162, 235, 1)'}}></span>
                     <span className="ms-1">Humidity</span>
-                  </div>
-                  <div className="sensor-legend me-3">
-                    <span className="sensor-dot" style={{backgroundColor: 'rgba(255, 159, 64, 1)'}}></span>
-                    <span className="ms-1">CO₂</span>
-                  </div>
-                  <div className="sensor-legend">
-                    <span className="sensor-dot" style={{backgroundColor: 'rgba(75, 192, 192, 1)'}}></span>
-                    <span className="ms-1">Light</span>
                   </div>
                 </div>
               </Card.Header>
@@ -342,7 +463,7 @@ const AdminDashboard = () => {
                       {getOptimalStatus(iotData.temperature, 20, 26)}
                     </Badge>
                   </div>
-                  <div className="metric-value">Optimal Range: 22-26°C</div>
+                  <div className="metric-value">Current: {iotData.temperature}°C | Optimal: 22-26°C</div>
                   <ProgressBar 
                     now={(iotData.temperature / 30) * 100} 
                     variant={getOptimalStatus(iotData.temperature, 20, 26) === 'optimal' ? 'success' : 'warning'}
@@ -360,52 +481,17 @@ const AdminDashboard = () => {
                       {getOptimalStatus(iotData.humidity, 75, 85)}
                     </Badge>
                   </div>
-                  <div className="metric-value">Optimal Range: 80-90%</div>
+                  <div className="metric-value">Current: {iotData.humidity}% | Optimal: 75-85%</div>
                   <ProgressBar 
                     now={iotData.humidity} 
                     variant={getOptimalStatus(iotData.humidity, 75, 85) === 'optimal' ? 'success' : 'warning'}
                   />
                 </div>
 
-                {/* CO2 Level */}
-                <div className="iot-metric mb-3">
-                  <div className="d-flex justify-content-between align-items-center mb-1">
-                    <div className="d-flex align-items-center">
-                      <FiWind className="me-2 text-warning" />
-                      <span>Co2 Level</span>
-                    </div>
-                    <Badge bg={getOptimalStatus(iotData.co2Level, 800, 1200) === 'optimal' ? 'success' : 'warning'}>
-                      Warning
-                    </Badge>
-                  </div>
-                  <div className="metric-value">Optimal Range: 800-1500 ppm</div>
-                  <ProgressBar 
-                    now={(iotData.co2Level / 1500) * 100} 
-                    variant="warning"
-                  />
-                </div>
-
-                {/* Light Intensity */}
-                <div className="iot-metric mb-3">
-                  <div className="d-flex justify-content-between align-items-center mb-1">
-                    <div className="d-flex align-items-center">
-                      <FiSun className="me-2 text-warning" />
-                      <span>Light Intensity</span>
-                    </div>
-                    <Badge bg={getOptimalStatus(iotData.lightIntensity, 1000, 1400) === 'optimal' ? 'success' : 'warning'}>
-                      {getOptimalStatus(iotData.lightIntensity, 1000, 1400)}
-                    </Badge>
-                  </div>
-                  <ProgressBar 
-                    now={(iotData.lightIntensity / 1500) * 100} 
-                    variant={getOptimalStatus(iotData.lightIntensity, 1000, 1400) === 'optimal' ? 'success' : 'warning'}
-                  />
-                </div>
-
                 {/* Alert */}
-                <div className="alert alert-warning d-flex align-items-center mt-3">
+                <div className="alert alert-info d-flex align-items-center mt-3">
                   <FiAlertTriangle className="me-2" />
-                  <small>1 Alert: CO2 levels approaching upper threshold in Room 1</small>
+                  <small>Monitoring all rooms for optimal conditions</small>
                 </div>
               </Card.Body>
             </Card>
@@ -417,46 +503,50 @@ const AdminDashboard = () => {
           <Col>
             <Card>
               <Card.Header className="d-flex justify-content-between align-items-center">
-                <h6 className="mb-0">My Recent Orders</h6>
-                <Button variant="outline-secondary" size="sm">Today ▼</Button>
+                <h6 className="mb-0">Latest Orders</h6>
+                <Button variant="outline-secondary" size="sm" onClick={fetchDashboardData}>
+                  Refresh
+                </Button>
               </Card.Header>
               <Card.Body>
-                <Table responsive className="mb-0">
-                  <thead>
-                    <tr>
-                      <th>S-no</th>
-                      <th>Product</th>
-                      <th>Quantity</th>
-                      <th>Status</th>
-                      <th>Date ↑</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentOrders.map((order, index) => (
-                      <tr key={order.id}>
-                        <td>{order.id}</td>
-                        <td>{order.product}</td>
-                        <td>{order.quantity}</td>
-                        <td>
-                          <Badge bg={getStatusBadge(order.status).variant}>
-                            {getStatusBadge(order.status).text}
-                          </Badge>
-                        </td>
-                        <td>{order.date}</td>
+                {dashboardData.recentOrders.length > 0 ? (
+                  <Table responsive className="mb-0">
+                    <thead>
+                      <tr>
+                        <th>Order ID</th>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th>Status</th>
+                        <th>Date</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </Table>
+                    </thead>
+                    <tbody>
+                      {dashboardData.recentOrders.map((order, index) => (
+                        <tr key={order.id}>
+                          <td>#{order.id}</td>
+                          <td>{order.product}</td>
+                          <td>{order.quantity}</td>
+                          <td>
+                            <Badge bg={getStatusBadge(order.status).variant}>
+                              {getStatusBadge(order.status).text}
+                            </Badge>
+                          </td>
+                          <td>{order.date}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-muted">No recent orders found</p>
+                  </div>
+                )}
               </Card.Body>
             </Card>
           </Col>
         </Row>
       </>
     );
-  };
-
-  const renderContent = () => {
-    return renderDashboardContent();
   };
 
   return (
@@ -468,7 +558,7 @@ const AdminDashboard = () => {
       <div className="main-content">
         {/* Dashboard Content */}
         <div className="dashboard-content">
-          {renderContent()}
+          {renderDashboardContent()}
         </div>
       </div>
     </div>

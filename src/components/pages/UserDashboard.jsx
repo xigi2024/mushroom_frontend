@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Container, Row, Col, Card, Table, Badge, ProgressBar, Button } from 'react-bootstrap';
+import { Container, Row, Col, Card, Table, Badge, ProgressBar, Button, Spinner, Alert } from 'react-bootstrap';
 import { FiPackage, FiHome, FiTrendingUp, FiThermometer, FiDroplet, FiWind, FiSun, FiAlertTriangle } from 'react-icons/fi';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js';
 import { Line } from 'react-chartjs-2';
+import { useNavigate } from 'react-router-dom';
 import '../styles/dashboard.css';
 import Layout from '../Layout';
 
@@ -18,35 +19,126 @@ ChartJS.register(
 );
 
 const UserDashboard = () => {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('dashboard');
   const [iotData, setIotData] = useState({
     temperature: 22,
-    humidity: 80,
-    co2Level: 800,
-    lightIntensity: 1200
+    humidity: 80
   });
 
-  // Chart data for sensor history
+  // State for rooms and orders data
+  const [rooms, setRooms] = useState([]);
+  const [allOrders, setAllOrders] = useState([]); // All orders for total count
+  const [latestOrders, setLatestOrders] = useState([]); // Only latest 3 for display
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  // Chart data for sensor history - only temperature and humidity
   const [sensorHistory, setSensorHistory] = useState({
     labels: Array(12).fill('').map((_, i) => {
-      // Generate time labels for 5-minute intervals (last hour)
       const date = new Date();
       date.setMinutes(date.getMinutes() - ((12 - i) * 5));
       return date.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     }),
     temperature: Array(12).fill(22),
     humidity: Array(12).fill(80),
-    co2: Array(12).fill(800),
-    light: Array(12).fill(1200),
     lastUpdate: new Date()
   });
+
+  // Fetch user's rooms data
+  const fetchUserRooms = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+
+      const response = await fetch('https://mycomatrix.in/api/rooms/my-rooms/', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const roomsData = await response.json();
+        if (roomsData.success) {
+          setRooms(roomsData.rooms || []);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching rooms:', err);
+    }
+  };
+
+  // ✅ FIXED: Fetch ALL user's orders data for total count
+  const fetchUserOrders = async () => {
+    try {
+      const token = localStorage.getItem('access_token');
+      if (!token) {
+        setError('Please login to view your orders');
+        return;
+      }
+
+      const response = await fetch('https://mycomatrix.in/api/orders/my-orders/', {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const ordersData = await response.json();
+        console.log('📦 All User orders:', ordersData);
+        
+        if (Array.isArray(ordersData)) {
+          // Set ALL orders for total count calculation
+          setAllOrders(ordersData);
+          
+          // Take only latest 3 orders for display (sorted by date, newest first)
+          const sortedOrders = [...ordersData].sort((a, b) => 
+            new Date(b.created_at) - new Date(a.created_at)
+          );
+          const latestThree = sortedOrders.slice(0, 3);
+          setLatestOrders(latestThree);
+          
+          console.log('🔄 Latest 3 orders for display:', latestThree);
+          console.log('📊 Total orders count:', ordersData.length);
+        }
+      }
+    } catch (err) {
+      console.error('Error fetching orders:', err);
+    }
+  };
+
+  // ✅ FIXED: Calculate total ordered products from ALL orders
+  const getTotalOrderedProducts = () => {
+    if (!Array.isArray(allOrders) || allOrders.length === 0) return 0;
+    
+    let totalProducts = 0;
+    
+    allOrders.forEach(order => {
+      if (order.items && Array.isArray(order.items)) {
+        order.items.forEach(item => {
+          totalProducts += item.qty || 1;
+        });
+      }
+    });
+    
+    console.log('🛒 Total ordered products:', totalProducts);
+    return totalProducts;
+  };
+
+  // ✅ FIXED: Calculate total number of orders
+  const getTotalOrdersCount = () => {
+    return Array.isArray(allOrders) ? allOrders.length : 0;
+  };
 
   // Update chart data when iotData changes
   useEffect(() => {
     const now = new Date();
-    const timeDiff = (now - sensorHistory.lastUpdate) / (1000 * 60); // in minutes
+    const timeDiff = (now - sensorHistory.lastUpdate) / (1000 * 60);
     
-    // Only update if 5 minutes have passed since last update
     if (timeDiff >= 5) {
       setSensorHistory(prev => {
         const newLabels = [...prev.labels.slice(1), now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})];
@@ -55,14 +147,13 @@ const UserDashboard = () => {
           labels: newLabels,
           temperature: [...prev.temperature.slice(1), iotData.temperature],
           humidity: [...prev.humidity.slice(1), iotData.humidity],
-          co2: [...prev.co2.slice(1), iotData.co2Level],
-          light: [...prev.light.slice(1), iotData.lightIntensity],
           lastUpdate: now
         };
       });
     }
   }, [iotData, sensorHistory.lastUpdate]);
 
+  // Updated chart data - only temperature and humidity
   const chartData = {
     labels: sensorHistory.labels,
     datasets: [
@@ -85,30 +176,11 @@ const UserDashboard = () => {
         yAxisID: 'y1',
         pointRadius: 2,
         borderWidth: 2
-      },
-      {
-        label: 'CO2 (ppm)',
-        data: sensorHistory.co2,
-        borderColor: 'rgba(255, 159, 64, 1)',
-        backgroundColor: 'rgba(255, 159, 64, 0.2)',
-        tension: 0.4,
-        yAxisID: 'y2',
-        pointRadius: 2,
-        borderWidth: 2
-      },
-      {
-        label: 'Light (lux)',
-        data: sensorHistory.light,
-        borderColor: 'rgba(75, 192, 192, 1)',
-        backgroundColor: 'rgba(75, 192, 192, 0.2)',
-        tension: 0.4,
-        yAxisID: 'y3',
-        pointRadius: 2,
-        borderWidth: 2
       }
     ]
   };
 
+  // Updated chart options - only temperature and humidity
   const chartOptions = {
     responsive: true,
     interaction: {
@@ -130,8 +202,6 @@ const UserDashboard = () => {
               label += context.parsed.y;
               if (label.includes('°C')) label = label.replace('°C', ' °C');
               if (label.includes('%')) label = label.replace('%', ' %');
-              if (label.includes('ppm')) label = label.replace('ppm', ' ppm');
-              if (label.includes('lux')) label = label.replace('lux', ' lux');
             }
             return label;
           }
@@ -167,34 +237,6 @@ const UserDashboard = () => {
           drawOnChartArea: false
         }
       },
-      y2: {
-        type: 'linear',
-        display: true,
-        position: 'left',
-        title: {
-          display: true,
-          text: 'CO2 (ppm)'
-        },
-        min: 500,
-        max: 1500,
-        grid: {
-          drawOnChartArea: false
-        }
-      },
-      y3: {
-        type: 'linear',
-        display: true,
-        position: 'right',
-        title: {
-          display: true,
-          text: 'Light (lux)'
-        },
-        min: 500,
-        max: 2000,
-        grid: {
-          drawOnChartArea: false
-        }
-      },
       x: {
         grid: {
           display: false
@@ -205,15 +247,22 @@ const UserDashboard = () => {
 
   useEffect(() => {
     setActiveSection('dashboard');
+    
+    // Fetch initial data
+    const fetchData = async () => {
+      setLoading(true);
+      await Promise.all([fetchUserRooms(), fetchUserOrders()]);
+      setLoading(false);
+    };
+    
+    fetchData();
   }, []);
 
   useEffect(() => {
     const updateSensorData = () => {
       setIotData(prev => ({
         temperature: Math.round((prev.temperature + (Math.random() - 0.5) * 2) * 10) / 10,
-        humidity: Math.max(60, Math.min(90, prev.humidity + (Math.random() - 0.5) * 5)),
-        co2Level: Math.max(600, Math.min(1200, prev.co2Level + (Math.random() - 0.5) * 100)),
-        lightIntensity: Math.max(800, Math.min(1500, prev.lightIntensity + (Math.random() - 0.5) * 200))
+        humidity: Math.max(60, Math.min(90, prev.humidity + (Math.random() - 0.5) * 5))
       }));
     };
 
@@ -226,18 +275,45 @@ const UserDashboard = () => {
     return () => clearInterval(interval);
   }, []);
 
-  const recentOrders = [
-    { id: '001', product: 'Organic Shiitake', quantity: '2kg', status: 'delivered', date: '2024-01-15' },
-    { id: '002', product: 'Organic Shiitake', quantity: '2kg', status: 'delivered', date: '2024-01-15' },
-    { id: '003', product: 'Organic Shiitake', quantity: '2kg', status: 'delivered', date: '2024-01-15' },
-    { id: '004', product: 'Organic Shiitake', quantity: '2kg', status: 'delivered', date: '2024-01-15' },
-  ];
+  // ✅ FIXED: Format latest 3 orders for display
+  const formatLatestOrders = () => {
+    if (!Array.isArray(latestOrders) || latestOrders.length === 0) return [];
+
+    return latestOrders.flatMap(order => {
+      if (!order.items || order.items.length === 0) {
+        return [{
+          id: order.id,
+          order_id: `ORD-${String(order.id).padStart(3, '0')}`,
+          product: 'No items',
+          quantity: 0,
+          status: order.status || 'pending',
+          date: new Date(order.created_at).toLocaleDateString('en-IN'),
+          total_amount: order.total_amount || '0.00'
+        }];
+      }
+      
+      return order.items.map(item => ({
+        id: order.id,
+        order_id: `ORD-${String(order.id).padStart(3, '0')}`,
+        product: item.product?.name || 'Product',
+        quantity: item.qty || 1,
+        status: order.status || 'pending',
+        date: new Date(order.created_at).toLocaleDateString('en-IN'),
+        total_amount: order.total_amount || '0.00'
+      }));
+    });
+  };
+
+  const displayLatestOrders = formatLatestOrders();
 
   const getStatusBadge = (status) => {
     const statusConfig = {
-      delivered: { variant: 'success', text: 'delivered' },
-      pending: { variant: 'warning', text: 'pending' },
-      processing: { variant: 'info', text: 'processing' }
+      delivered: { variant: 'success', text: 'Delivered' },
+      completed: { variant: 'success', text: 'Completed' },
+      processing: { variant: 'warning', text: 'Processing' },
+      shipped: { variant: 'info', text: 'Shipped' },
+      pending: { variant: 'secondary', text: 'Pending' },
+      cancelled: { variant: 'danger', text: 'Cancelled' }
     };
     return statusConfig[status] || { variant: 'secondary', text: status };
   };
@@ -247,6 +323,19 @@ const UserDashboard = () => {
     if (value < min - 5 || value > max + 5) return 'critical';
     return 'warning';
   };
+
+  if (loading) {
+    return (
+      <Layout activeSection={activeSection} setActiveSection={setActiveSection} userRole="user">
+        <div className="dashboard-content">
+          <div className="text-center py-5">
+            <Spinner animation="border" variant="primary" />
+            <p className="mt-2">Loading dashboard...</p>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout activeSection={activeSection} setActiveSection={setActiveSection} userRole="user">
@@ -258,8 +347,9 @@ const UserDashboard = () => {
             <Card className="stat-card">
               <Card.Body className="d-flex justify-content-between align-items-center">
                 <div className="text-start">
-                  <div className="stat-number">156</div>
-                  <div className="stat-label">My ordered Product</div>
+                  <div className="stat-number">{getTotalOrderedProducts()}</div>
+                  <div className="stat-label">My Ordered Products</div>
+                  <small className="text-muted">From {getTotalOrdersCount()} orders</small>
                 </div>
                 <div className="stat-icon">
                   <FiPackage className="color" size={32} />
@@ -271,8 +361,8 @@ const UserDashboard = () => {
             <Card className="stat-card">
               <Card.Body className="d-flex justify-content-between align-items-center">
                 <div className="text-start">
-                  <div className="stat-number">2</div>
-                  <div className="stat-label">Total Room</div>
+                  <div className="stat-number">{rooms.length}</div>
+                  <div className="stat-label">Total Rooms</div>
                 </div>
                 <div className="stat-icon text-info">
                   <FiHome size={32} />
@@ -284,9 +374,8 @@ const UserDashboard = () => {
             <Card className="stat-card">
               <Card.Body className="d-flex justify-content-between align-items-center">
                 <div className="text-start">
-                  <div className="stat-number">285 kg</div>
-                  <div className="stat-label">Mushrooms Produced</div>
-                  <div className="stat-label-sub">this month</div>
+                  <div className="stat-number">{getTotalOrdersCount()}</div>
+                  <div className="stat-label">Total Orders</div>
                 </div>
                 <div className="stat-icon text-success">
                   <FiTrendingUp size={32} />
@@ -308,17 +397,9 @@ const UserDashboard = () => {
                     <span className="sensor-dot" style={{backgroundColor: 'rgba(255, 99, 132, 1)'}}></span>
                     <span className="ms-1">Temp</span>
                   </div>
-                  <div className="sensor-legend me-3">
+                  <div className="sensor-legend">
                     <span className="sensor-dot" style={{backgroundColor: 'rgba(54, 162, 235, 1)'}}></span>
                     <span className="ms-1">Humidity</span>
-                  </div>
-                  <div className="sensor-legend me-3">
-                    <span className="sensor-dot" style={{backgroundColor: 'rgba(255, 159, 64, 1)'}}></span>
-                    <span className="ms-1">CO₂</span>
-                  </div>
-                  <div className="sensor-legend">
-                    <span className="sensor-dot" style={{backgroundColor: 'rgba(75, 192, 192, 1)'}}></span>
-                    <span className="ms-1">Light</span>
                   </div>
                 </div>
               </Card.Header>
@@ -327,7 +408,7 @@ const UserDashboard = () => {
                   <Line data={chartData} options={chartOptions} />
                 </div>
                 <div className="mt-2 text-center">
-                  <small className="text-muted">Real-time sensor data (updates every 3 seconds)</small>
+                  <small className="text-muted">Real-time sensor data (updates every 5 minutes)</small>
                 </div>
               </Card.Body>
             </Card>
@@ -338,7 +419,7 @@ const UserDashboard = () => {
             <Card className="iot-card">
               <Card.Header className="d-flex justify-content-between align-items-center">
                 <h6 className="mb-0">IoT Room Status</h6>
-                <small className="text-muted">Last 7 Days</small>
+                <small className="text-muted">Live Data</small>
               </Card.Header>
               <Card.Body>
                 {/* Temperature */}
@@ -377,87 +458,79 @@ const UserDashboard = () => {
                   />
                 </div>
 
-                {/* CO2 Level */}
-                <div className="iot-metric mb-3">
-                  <div className="d-flex justify-content-between align-items-center mb-1">
-                    <div className="d-flex align-items-center">
-                      <FiWind className="me-2 text-warning" />
-                      <span>CO2 Level</span>
-                    </div>
-                    <Badge bg={getOptimalStatus(iotData.co2Level, 800, 1200) === 'optimal' ? 'success' : 'warning'}>
-                      {getOptimalStatus(iotData.co2Level, 800, 1200)}
-                    </Badge>
+                {/* Room Status Summary */}
+                <div className="mt-4 p-3 bg-light rounded">
+                  <h6 className="mb-2">Rooms Summary</h6>
+                  <div className="d-flex justify-content-between">
+                    <small>Total Rooms: <strong>{rooms.length}</strong></small>
+                    <small>Active Sensors: <strong>{rooms.filter(room => room.latest_sensor_data).length}</strong></small>
                   </div>
-                  <div className="metric-value">{iotData.co2Level} ppm (Optimal: 800-1500 ppm)</div>
-                  <ProgressBar 
-                    now={(iotData.co2Level / 1500) * 100} 
-                    variant={getOptimalStatus(iotData.co2Level, 800, 1200) === 'optimal' ? 'success' : 'warning'}
-                  />
                 </div>
-
-                {/* Light Intensity */}
-                <div className="iot-metric mb-3">
-                  <div className="d-flex justify-content-between align-items-center mb-1">
-                    <div className="d-flex align-items-center">
-                      <FiSun className="me-2 text-warning" />
-                      <span>Light Intensity</span>
-                    </div>
-                    <Badge bg={getOptimalStatus(iotData.lightIntensity, 1000, 1400) === 'optimal' ? 'success' : 'warning'}>
-                      {getOptimalStatus(iotData.lightIntensity, 1000, 1400)}
-                    </Badge>
-                  </div>
-                  <div className="metric-value">{iotData.lightIntensity} lux (Optimal: 1000-1400 lux)</div>
-                  <ProgressBar 
-                    now={(iotData.lightIntensity / 1500) * 100} 
-                    variant={getOptimalStatus(iotData.lightIntensity, 1000, 1400) === 'optimal' ? 'success' : 'warning'}
-                  />
-                </div>
-
-         
               </Card.Body>
             </Card>
           </Col>
         </Row>
 
-        {/* Recent Orders Table */}
+        {/* Recent Orders Table - Only 3 latest orders */}
         <Row className="mt-4">
           <Col>
             <Card>
               <Card.Header className="d-flex justify-content-between align-items-center">
-                <h6 className="mb-0">My Recent Orders</h6>
-                <Button variant="outline-secondary" size="sm">Today ▼</Button>
+                <h6 className="mb-0">My Recent Orders (Latest 3)</h6>
+                <Button className='button' onClick={() => navigate("/user/product-order")}>View All</Button>
               </Card.Header>
               <Card.Body>
-                <Table responsive className="mb-0">
-                  <thead>
-                    <tr>
-                      <th>S-no</th>
-                      <th>Product</th>
-                      <th>Quantity</th>
-                      <th>Status</th>
-                      <th>Date ↑</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentOrders.map((order) => (
-                      <tr key={order.id}>
-                        <td>{order.id}</td>
-                        <td>{order.product}</td>
-                        <td>{order.quantity}</td>
-                        <td>
-                          <Badge bg={getStatusBadge(order.status).variant}>
-                            {getStatusBadge(order.status).text}
-                          </Badge>
-                        </td>
-                        <td>{order.date}</td>
+                {displayLatestOrders.length === 0 ? (
+                  <div className="text-center py-4">
+                    <p className="text-muted">No recent orders found.</p>
+                  </div>
+                ) : (
+                  <Table responsive className="mb-0">
+                    <thead>
+                      <tr>
+                        <th>Order ID</th>
+                        <th>Product</th>
+                        <th>Quantity</th>
+                        <th>Status</th>
+                        <th>Date</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </Table>
+                    </thead>
+                    <tbody>
+                      {displayLatestOrders.map((order, index) => (
+                        <tr key={`${order.id}-${index}`}>
+                          <td>
+                            <strong>{order.order_id}</strong>
+                          </td>
+                          <td>
+                            <div>
+                              <div className="fw-semibold">{order.product}</div>
+                              <small className="text-muted">
+                                Order Total: ₹{order.total_amount}
+                              </small>
+                            </div>
+                          </td>
+                          <td>{order.quantity}</td>
+                          <td>
+                            <Badge bg={getStatusBadge(order.status).variant}>
+                              {getStatusBadge(order.status).text}
+                            </Badge>
+                          </td>
+                          <td>{order.date}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </Table>
+                )}
               </Card.Body>
             </Card>
           </Col>
         </Row>
+
+        {error && (
+          <Alert variant="warning" className="mt-3">
+            {error}
+          </Alert>
+        )}
       </div>
     </Layout>
   );

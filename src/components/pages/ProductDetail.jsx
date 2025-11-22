@@ -215,6 +215,7 @@ const ProductDetail = () => {
     navigate("/checkout", {
       state: {
         product: product.name,
+        product_id: product.id, // ✅ ADD THIS LINE - CRITICAL FIX
         price: parseFloat(product.price),
         quantity: quantity,
         total: totalPrice
@@ -227,10 +228,13 @@ const ProductDetail = () => {
 <Button
   variant="outline-secondary w-50"
   onClick={async () => {
-    const result = await addToCart(product, quantity);
+    const result = await addToCart({
+      ...product,
+      product_id: product.id // ✅ Ensure product_id is included
+    }, quantity);
 
     if (result.success) {
-      navigate("/cart");  // Cart page ku redirect
+      navigate("/cart");
     } else {
       alert("Failed to add product to cart");
     }

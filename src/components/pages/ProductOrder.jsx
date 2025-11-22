@@ -53,23 +53,43 @@ const ProductOrder = ({ userRole = 'admin' }) => {
   }, []);
 
   // Format order data for display
-  const formatOrdersForDisplay = () => {
-    return orders.flatMap(order => 
-      order.items.map(item => ({
+// FIXED: Handle orders with empty items array
+const formatOrdersForDisplay = () => {
+  return orders.flatMap(order => {
+    // If order has no items, create a placeholder item
+    if (!order.items || order.items.length === 0) {
+      return [{
         id: order.id,
         order_id: `ORD-${String(order.id).padStart(3, '0')}`,
         customer: `${order.user_details?.first_name || 'User'} ${order.user_details?.last_name || ''}`.trim() || 'Customer',
-        product: item.product?.name || 'Product',
-        quantity: item.qty || 1,
-        amount: parseFloat(item.price || 0) * (item.qty || 1),
+        product: 'No items', // Placeholder
+        quantity: 0,
+        amount: 0,
         total_order_amount: parseFloat(order.total_amount || 0),
         status: order.status || 'pending',
         payment_status: order.payment_status || 'unpaid',
         date: new Date(order.created_at).toLocaleDateString('en-IN'),
-        item_details: item
-      }))
-    );
-  };
+        item_details: null,
+        has_empty_items: true // Flag for empty items
+      }];
+    }
+    
+    // Normal order with items
+    return order.items.map(item => ({
+      id: order.id,
+      order_id: `ORD-${String(order.id).padStart(3, '0')}`,
+      customer: `${order.user_details?.first_name || 'User'} ${order.user_details?.last_name || ''}`.trim() || 'Customer',
+      product: item.product?.name || 'Product',
+      quantity: item.qty || 1,
+      amount: parseFloat(item.price || 0) * (item.qty || 1),
+      total_order_amount: parseFloat(order.total_amount || 0),
+      status: order.status || 'pending',
+      payment_status: order.payment_status || 'unpaid',
+      date: new Date(order.created_at).toLocaleDateString('en-IN'),
+      item_details: item
+    }));
+  });
+};
 
   const displayOrders = formatOrdersForDisplay();
 

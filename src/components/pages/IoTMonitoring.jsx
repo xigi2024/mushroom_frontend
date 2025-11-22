@@ -1,27 +1,31 @@
+// components/IoTMonitoring.js
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, Row, Col, Card, Badge, ProgressBar, Button, Alert, Modal, Form, Spinner } from 'react-bootstrap';
-import { FiThermometer, FiDroplet, FiWind, FiSun, FiAlertTriangle, FiHome, FiMonitor, FiX } from 'react-icons/fi';
+import { FiThermometer, FiDroplet, FiHome, FiMonitor, FiX, FiRefreshCw } from 'react-icons/fi';
 import Sidebar from '../Sidebar';
 import axios from 'axios';
 import { useAuth } from '../../context/AuthContext';
+import { useIoTKitVerification } from '../../hooks/useIoTKitVerification';
 
 const API_BASE_URL = "https://mycomatrix.in/api";
 
 const IoTMonitoring = ({ userRole = 'admin' }) => {
   const navigate = useNavigate();
   const { isAuthenticated, user, token, loading: authLoading } = useAuth();
+  
+  // ✅ All hooks must be called unconditionally at the top
+  const { hasIoTKit, loading: verificationLoading, error: verificationError, userOrders } = useIoTKitVerification(token);
 
   const [activeSection, setActiveSection] = useState('iot-monitoring');
   const [showAddRoomModal, setShowAddRoomModal] = useState(false);
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshLoading, setRefreshLoading] = useState(false);
 
   const [totalStats, setTotalStats] = useState({
     totalRooms: 0,
     totalSensors: 0,
-    activeAlerts: 0,
-    offlineRooms: 0
   });
 
   const [newRoom, setNewRoom] = useState({
@@ -31,6 +35,15 @@ const IoTMonitoring = ({ userRole = 'admin' }) => {
 
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
+
+  // Debug logging - this is fine as it's not JSX
+  console.log('🔍 IoT Kit Verification Status:', {
+    hasIoTKit,
+    verificationLoading,
+    verificationError,
+    user: user?.id,
+    isAuthenticated
+  });
 
   // ✅ Configure axios headers with auth token
   const getAuthHeaders = () => {
@@ -50,20 +63,28 @@ const IoTMonitoring = ({ userRole = 'admin' }) => {
 
     try {
       setLoading(true);
-      console.log('Fetching rooms with token:', token);
+      console.log('Fetching rooms with sensor data...');
       
-      const response = await axios.get(`${API_BASE_URL}/rooms/list/`, {
+      const response = await axios.get(`${API_BASE_URL}/rooms/my-rooms/`, {
         headers: getAuthHeaders()
       });
       
-      console.log('Rooms fetched successfully:', response.data);
-      setRooms(response.data);
-      setTotalStats({
-        totalRooms: response.data.length,
-        totalSensors: response.data.length * 5,
-        activeAlerts: response.data.filter(r => r.status === 'warning').length,
-        offlineRooms: response.data.filter(r => r.status === 'critical').length
-      });
+      console.log('✅ Rooms with sensor data:', response.data);
+      
+      if (response.data.success) {
+        const roomsWithData = response.data.rooms;
+        setRooms(roomsWithData);
+        
+        // ✅ Update stats with real data
+        const roomsWithSensors = roomsWithData.filter(room => room.latest_sensor_data);
+
+        setTotalStats({
+          totalRooms: roomsWithData.length,
+          totalSensors: roomsWithSensors.length * 2,
+        });
+
+        return roomsWithData;
+      }
     } catch (error) {
       console.error("Error fetching rooms:", error);
       if (error.response?.status === 401) {
@@ -79,19 +100,23 @@ const IoTMonitoring = ({ userRole = 'admin' }) => {
     }
   };
 
-  useEffect(() => {
-    if (!authLoading) {
-      if (!isAuthenticated) {
-        console.log('User not authenticated, redirecting to login');
-        navigate('/login');
-      } else {
-        console.log('User authenticated, fetching rooms...');
-        fetchRooms();
-      }
-    }
-  }, [isAuthenticated, authLoading, navigate]);
+  // ✅ Simple refresh function
+  const handleRefresh = async () => {
+    setRefreshLoading(true);
+    await fetchRooms();
+    setRefreshLoading(false);
+    setFormSuccess('Rooms refreshed successfully!');
+    setTimeout(() => setFormSuccess(''), 3000);
+  };
 
-  // ✅ Handle Add Room with authentication - SIMPLIFIED
+  useEffect(() => {
+    if (hasIoTKit && !verificationLoading) {
+      console.log('User has IoT kit, fetching rooms...');
+      fetchRooms();
+    }
+  }, [hasIoTKit, verificationLoading]);
+
+  // ✅ Handle Add Room with authentication
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setNewRoom({ ...newRoom, [name]: value });
@@ -100,7 +125,6 @@ const IoTMonitoring = ({ userRole = 'admin' }) => {
   const handleAddRoom = async (e) => {
     e.preventDefault();
     
-    // Check authentication
     if (!isAuthenticated || !token) {
       setFormError('Authentication required. Please login again.');
       setTimeout(() => {
@@ -120,8 +144,6 @@ const IoTMonitoring = ({ userRole = 'admin' }) => {
     }
 
     try {
-      // ✅ IMPORTANT: Send ONLY name and kit_id
-      // Backend will automatically assign user from token
       const roomData = {
         name: newRoom.name,
         kit_id: newRoom.kit_id
@@ -146,7 +168,8 @@ const IoTMonitoring = ({ userRole = 'admin' }) => {
       setTimeout(() => {
         setShowAddRoomModal(false);
         setFormSuccess('');
-        fetchRooms(); // Refresh list
+        // Refresh rooms after adding new room
+        fetchRooms();
       }, 1000);
     } catch (error) {
       console.error('❌ Error adding room:', error);
@@ -156,7 +179,6 @@ const IoTMonitoring = ({ userRole = 'admin' }) => {
           navigate('/login');
         }, 2000);
       } else if (error.response?.data?.error) {
-        // Show backend error message (like "Kit ID already exists")
         setFormError(error.response.data.error);
       } else if (error.response?.data) {
         setFormError(error.response.data.message || 'Failed to add room');
@@ -182,6 +204,7 @@ const IoTMonitoring = ({ userRole = 'admin' }) => {
         headers: getAuthHeaders()
       });
       console.log('Room deleted successfully');
+      // Refresh rooms after deletion
       fetchRooms();
     } catch (error) {
       console.error('Error deleting room:', error);
@@ -203,45 +226,169 @@ const IoTMonitoring = ({ userRole = 'admin' }) => {
     });
   };
 
-  const getStatusBadge = (status) => {
-    const statusConfig = {
-      optimal: { variant: 'success', text: 'Optimal' },
-      warning: { variant: 'warning', text: 'Warning' },
-      critical: { variant: 'danger', text: 'Critical' }
-    };
-    return statusConfig[status] || { variant: 'secondary', text: status };
+  const getStatusBadge = (sensorData) => {
+    if (!sensorData) {
+      return { variant: 'secondary', text: 'No Data' };
+    }
+
+    const temp = sensorData.temperature;
+    const humidity = sensorData.humidity;
+
+    const isTempOptimal = temp >= 22 && temp <= 26;
+    const isHumidityOptimal = humidity >= 75 && humidity <= 85;
+
+    if (isTempOptimal && isHumidityOptimal) {
+      return { variant: 'success', text: 'Optimal' };
+    }
+
+    const isTempCritical = temp < 17 || temp > 31;
+    const isHumidityCritical = humidity < 70 || humidity > 90;
+
+    if (isTempCritical || isHumidityCritical) {
+      return { variant: 'danger', text: 'Critical' };
+    }
+
+    return { variant: 'warning', text: 'Warning' };
   };
 
   const getProgressVariant = (value, min, max) => {
+    if (!value) return 'secondary';
     if (value >= min && value <= max) return 'success';
     if (value < min - 5 || value > max + 5) return 'danger';
     return 'warning';
   };
 
-  // Show loading while checking authentication
-  if (authLoading) {
+  // Show loading while checking authentication and IoT verification
+  if (authLoading || verificationLoading) {
     return (
       <div className="d-flex justify-content-center align-items-center vh-100">
         <Spinner animation="border" variant="primary" />
-        <span className="ms-2">Checking authentication...</span>
+        <span className="ms-2">Verifying IoT access...</span>
       </div>
     );
   }
 
+  // Redirect if not authenticated
   if (!isAuthenticated) {
     navigate('/login');
     return null;
   }
 
-  if (loading) {
+  // Show purchase prompt if user doesn't have IoT controller
+  if (!hasIoTKit && !verificationLoading) {
     return (
-      <div className="d-flex justify-content-center align-items-center vh-100">
-        <Spinner animation="border" variant="primary" />
-        <span className="ms-2">Loading rooms...</span>
+      <div className="dashboard-container">
+        <Sidebar activeSection={activeSection} setActiveSection={setActiveSection} userRole={userRole} />
+        <div className="main-content">
+          <div className="dashboard-content">
+            <Container>
+              <Row className="justify-content-start">
+                <Col md={12} lg={12}>
+                  <Card className="border-0 shadow-sm py-5">
+                    <Card.Body>
+                      <h3 className="text-warning mb-3">IoT Controller Required</h3>
+                      <p className="text-muted mb-4">
+                        You need to purchase an IoT Controller to access real-time monitoring features. 
+                        Our IoT controllers provide accurate temperature, humidity, and environmental monitoring for optimal mushroom growth.
+                      </p>
+                      
+                      <div className="mb-4">
+                        <h5>Available IoT Controllers:</h5>
+                        <ul className="list-unstyled text-start">
+                          <li>✅ <strong>IOT CONTROLLER FOR (TEMPERATURE,HUMIDITY)</strong> - Basic monitoring</li>
+                          <li>✅ <strong>IOT CONTROLLER (TEMPERATURE,HUMIDITY,CO2)</strong> - Advanced monitoring</li>
+                          <li>✅ <strong>HUMIDIFIER</strong> - Climate control</li>
+                        </ul>
+                      </div>
+
+                      <div className="mb-4 p-3 bg-light rounded">
+                        <h6>Why IoT Monitoring?</h6>
+                        <small className="text-muted">
+                          • Real-time temperature & humidity tracking<br/>
+                          • Automated climate control<br/>
+                          • Historical data analysis<br/>
+                          • Mobile alerts and notifications<br/>
+                          • Optimal growth condition maintenance
+                        </small>
+                      </div>
+
+                      {/* ✅ MOVED DEBUG INFO HERE - Inside JSX return */}
+                      <div className="alert alert-info">
+                        <strong>Debug Info:</strong><br/>
+                        User ID: {user?.id}<br/>
+                        Orders Count: {userOrders?.length || 0}<br/>
+                        Completed Orders: {userOrders?.filter(o => o.status === 'completed' && o.payment_status === 'paid').length || 0}<br/>
+                        Check browser console for detailed order analysis
+                      </div>
+
+                      {verificationError && (
+                        <div className="alert alert-warning mb-3">
+                          <small>Verification issue: {verificationError}</small>
+                        </div>
+                      )}
+
+                      <div className="d-flex gap-3 justify-content-start">
+                        <Button 
+                          onClick={() => navigate('/products')}
+                          className="button"
+                        >
+                          Buy IoT Controller Now
+                        </Button>
+                      </div>
+                    </Card.Body>
+                  </Card>
+                </Col>
+              </Row>
+            </Container>
+          </div>
+        </div>
       </div>
     );
   }
 
+  // Show error state
+  if (verificationError && !hasIoTKit) {
+    return (
+      <div className="dashboard-container">
+        <Sidebar activeSection={activeSection} setActiveSection={setActiveSection} userRole={userRole} />
+        <div className="main-content">
+          <div className="dashboard-content">
+            <div className="d-flex justify-content-center align-items-center vh-100">
+              <div className="text-center">
+                <div className="text-danger mb-3">
+                  <i className="fas fa-exclamation-triangle" style={{ fontSize: '3rem' }}></i>
+                </div>
+                <h4>Verification Failed</h4>
+                <p className="text-muted mb-3">{verificationError}</p>
+                <Button variant="primary" onClick={() => window.location.reload()}>
+                  Retry
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show loading while fetching rooms
+  if (loading) {
+    return (
+      <div className="dashboard-container">
+        <Sidebar activeSection={activeSection} setActiveSection={setActiveSection} userRole={userRole} />
+        <div className="main-content">
+          <div className="dashboard-content">
+            <div className="d-flex justify-content-center align-items-center vh-100">
+              <Spinner animation="border" variant="primary" />
+              <span className="ms-2">Loading rooms...</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // MAIN IOT MONITORING CONTENT (only shown if user has IoT kit)
   return (
     <div className="dashboard-container">
       <Sidebar activeSection={activeSection} setActiveSection={setActiveSection} userRole={userRole} />
@@ -249,25 +396,45 @@ const IoTMonitoring = ({ userRole = 'admin' }) => {
       <div className="main-content">
         <div className="dashboard-content">
           <div className='mb-4'>
-            <h2 className="mb-1">IoT Monitoring</h2>
-            <p className="text-muted mb-0">Real-time monitoring of all mushroom growing rooms</p>
-            <small className="text-info">Welcome, {user?.name || user?.email}!</small>
-
-
-              {/* ✅ Add debug info */}
-  <div className="mt-2 p-2 bg-light rounded">
-    <small className="text-muted">
-      Debug: User ID: {user?.id} | Email: {user?.email} | Token: {token ? 'Yes' : 'No'}
-    </small>
-  </div>
-
+            <div className="d-flex justify-content-between align-items-start">
+              <div>
+                <h2 className="mb-1">IoT Monitoring</h2>
+                <p className="text-muted mb-0">Real-time monitoring of all mushroom growing rooms</p>
+                <small className="text-info">Welcome, {user?.name || user?.email}!</small>
+              </div>
+              <Button 
+                variant="outline-primary" 
+                size="sm"
+                onClick={handleRefresh}
+                disabled={refreshLoading}
+                className="d-flex align-items-center gap-1"
+              >
+                <FiRefreshCw className={refreshLoading ? 'spinner' : ''} />
+                {refreshLoading ? 'Refreshing...' : 'Refresh Data'}
+              </Button>
+            </div>
+            <div className="mt-2">
+              <Badge bg="info" className="me-2">
+                Rooms: {totalStats.totalRooms}
+              </Badge>
+              <Badge bg="success" className="me-2">
+                Sensors: {totalStats.totalSensors}
+              </Badge>
+              <small className="text-muted">
+                Data updates automatically from IoT devices • Click refresh to get latest data
+              </small>
+            </div>
           </div>
-
-          
 
           {formError && (
             <Alert variant="danger" className="mb-3">
               {formError}
+            </Alert>
+          )}
+
+          {formSuccess && (
+            <Alert variant="success" className="mb-3">
+              {formSuccess}
             </Alert>
           )}
 
@@ -291,29 +458,13 @@ const IoTMonitoring = ({ userRole = 'admin' }) => {
                 </Card.Body>
               </Card>
             </Col>
-            <Col md={3}>
-              <Card className="border-0 shadow-sm text-center py-4">
-                <Card.Body>
-                  <div className="text-warning mb-3"><FiAlertTriangle size={32} /></div>
-                  <div className="h3 text-warning mb-0">{totalStats.activeAlerts}</div>
-                  <div className="text-muted">Active Alerts</div>
-                </Card.Body>
-              </Card>
-            </Col>
-            <Col md={3}>
-              <Card className="border-0 shadow-sm text-center py-4">
-                <Card.Body>
-                  <div className="text-danger mb-3"><FiWind size={32} /></div>
-                  <div className="h3 text-danger mb-0">{totalStats.offlineRooms}</div>
-                  <div className="text-muted">Offline Rooms</div>
-                </Card.Body>
-              </Card>
-            </Col>
           </Row>
 
           <div className='d-flex gap-4 mb-4 justify-content-between align-items-center'>
             <h3>Our Rooms</h3>
-            <button className='button' onClick={() => setShowAddRoomModal(true)}>Add Room</button>
+            <div className="d-flex gap-2">  
+              <button className='button' onClick={() => setShowAddRoomModal(true)}>Add Room</button>
+            </div>
           </div>
 
           {/* Room Cards */}
@@ -323,88 +474,95 @@ const IoTMonitoring = ({ userRole = 'admin' }) => {
                 <p className="text-muted">No rooms found. Add your first room to get started.</p>
               </Col>
             ) : (
-              rooms.map(room => (
-                <Col lg={4} md={6} className="mb-4" key={room.id}>
-                  <Card
-                    className="h-100 border-0 shadow-sm position-relative cursor-pointer"
-                    onClick={() => handleRoomClick(room)}
-                    style={{
-                      cursor: 'pointer',
-                      transition: 'transform 0.2s, box-shadow 0.2s'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-5px)';
-                      e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'translateY(0)';
-                      e.currentTarget.style.boxShadow = '';
-                    }}
-                  >
-                    <FiX
-                      className="position-absolute top-0 end-0 m-2 text-danger cursor-pointer"
-                      size={20}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteRoom(room.id);
-                      }}
-                      title="Delete Room"
+              rooms.map(roomData => {
+                const room = roomData.room;
+                const sensorData = roomData.latest_sensor_data;
+                const currentTemp = sensorData?.temperature || room.temperature;
+                const currentHumidity = sensorData?.humidity || room.humidity;
+                
+                return (
+                  <Col lg={4} md={6} className="mb-4" key={room.id}>
+                    <Card
+                      className="h-100 border-0 shadow-sm position-relative cursor-pointer"
+                      onClick={() => handleRoomClick(room)}
                       style={{
                         cursor: 'pointer',
-                        zIndex: 10,
-                        backgroundColor: 'white',
-                        borderRadius: '50%',
-                        padding: '2px'
+                        transition: 'transform 0.2s, box-shadow 0.2s'
                       }}
-                    />
-                    <Card.Header className="bg-white border-bottom-0">
-                      <div className="d-flex justify-content-between align-items-center">
-                        <h6 className="mb-0 fw-bold">{room.name}</h6>
-                        <Badge bg={getStatusBadge(room.status).variant} className="px-3 py-2">
-                          {getStatusBadge(room.status).text}
-                        </Badge>
-                      </div>
-                    </Card.Header>
-                    <Card.Body>
-                      {/* Temperature */}
-                      <div className="sensor-metric mb-3">
-                        <div className="d-flex justify-content-between mb-1">
-                          <span><FiThermometer className="me-2 text-danger" />Temp</span>
-                          <span>{room.temperature}°C</span>
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-5px)';
+                        e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = '';
+                      }}
+                    >
+                      <FiX
+                        className="position-absolute top-0 end-0 m-2 text-danger cursor-pointer"
+                        size={20}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteRoom(room.id);
+                        }}
+                        title="Delete Room"
+                        style={{
+                          cursor: 'pointer',
+                          zIndex: 10,
+                          backgroundColor: 'white',
+                          borderRadius: '50%',
+                          padding: '2px'
+                        }}
+                      />
+                      <Card.Header className="bg-white border-bottom-0">
+                        <div className="d-flex justify-content-between align-items-center">
+                          <h6 className="mb-0 fw-bold">{room.name}</h6>
+                          <Badge bg={getStatusBadge(sensorData).variant} className="px-3 py-2">
+                            {getStatusBadge(sensorData).text}
+                          </Badge>
                         </div>
-                        <ProgressBar now={(room.temperature / 30) * 100} variant={getProgressVariant(room.temperature, 22, 26)} />
-                      </div>
+                        <small className="text-muted">Kit ID: {room.kit_id}</small>
+                      </Card.Header>
+                      <Card.Body>
+                        {/* Temperature */}
+                        <div className="sensor-metric mb-3">
+                          <div className="d-flex justify-content-between mb-1">
+                            <span><FiThermometer className="me-2 text-danger" />Temp</span>
+                            <span>{currentTemp ? `${currentTemp}°C` : '--'}</span>
+                          </div>
+                          <ProgressBar 
+                            now={currentTemp ? (currentTemp / 30) * 100 : 0} 
+                            variant={getProgressVariant(currentTemp, 22, 26)} 
+                          />
+                          <small className="text-muted">Optimal: 22-26°C</small>
+                        </div>
 
-                      {/* Humidity */}
-                      <div className="sensor-metric mb-3">
-                        <div className="d-flex justify-content-between mb-1">
-                          <span><FiDroplet className="me-2 text-info" />Humidity</span>
-                          <span>{room.humidity}%</span>
+                        {/* Humidity */}
+                        <div className="sensor-metric">
+                          <div className="d-flex justify-content-between mb-1">
+                            <span><FiDroplet className="me-2 text-info" />Humidity</span>
+                            <span>{currentHumidity ? `${currentHumidity}%` : '--'}</span>
+                          </div>
+                          <ProgressBar 
+                            now={currentHumidity || 0} 
+                            variant={getProgressVariant(currentHumidity, 75, 85)} 
+                          />
+                          <small className="text-muted">Optimal: 75-85%</small>
                         </div>
-                        <ProgressBar now={room.humidity} variant={getProgressVariant(room.humidity, 80, 90)} />
-                      </div>
 
-                      {/* CO2 */}
-                      <div className="sensor-metric mb-3">
-                        <div className="d-flex justify-content-between mb-1">
-                          <span><FiWind className="me-2 text-warning" />CO₂</span>
-                          <span>{room.co2_level} ppm</span>
-                        </div>
-                        <ProgressBar now={(room.co2_level / 1500) * 100} variant={getProgressVariant(room.co2_level, 800, 1200)} />
-                      </div>
-
-                      {/* Light */}
-                      <div className="sensor-metric">
-                        <div className="d-flex justify-content-between mb-1">
-                          <span><FiSun className="me-2 text-warning" />Light</span>
-                          <span>{room.light_intensity} lux</span>
-                        </div>
-                        <ProgressBar now={(room.light_intensity / 1500) * 100} variant={getProgressVariant(room.light_intensity, 1000, 1400)} />
-                      </div>
-                    </Card.Body>
-                  </Card>
-                </Col>
-              ))
+                        {/* Last Updated */}
+                        {sensorData && (
+                          <div className="mt-3 pt-2 border-top">
+                            <small className="text-muted">
+                              Last updated: {new Date(sensorData.timestamp).toLocaleTimeString()}
+                            </small>
+                          </div>
+                        )}
+                      </Card.Body>
+                    </Card>
+                  </Col>
+                );
+              })
             )}
           </Row>
         </div>

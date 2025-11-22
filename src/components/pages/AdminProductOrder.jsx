@@ -65,27 +65,47 @@ const AdminProductOrder = () => {
   }, []);
 
   // Format order data for display
-  const formatOrdersForDisplay = () => {
-    if (!Array.isArray(orders)) return [];
-    
-    return orders.flatMap(order => 
-      order.items?.map(item => ({
+// Format order data for display - FIXED VERSION
+const formatOrdersForDisplay = () => {
+  if (!Array.isArray(orders)) return [];
+  
+  return orders.flatMap(order => {
+    // Handle orders with no items
+    if (!order.items || order.items.length === 0) {
+      return [{
         id: order.id,
         order_id: `ORD-${String(order.id).padStart(3, '0')}`,
         customer: order.user_details?.name || 'Customer',
         customer_email: order.user_details?.email || 'N/A',
-        product: item.product?.name || 'Product',
-        quantity: item.qty || 1,
-        amount: parseFloat(item.price || 0) * (item.qty || 1),
+        product: 'No items in order', // Placeholder
+        quantity: 0,
+        amount: 0,
         total_order_amount: parseFloat(order.total_amount || 0),
         status: order.status || 'pending',
         payment_status: order.payment_status || 'unpaid',
         date: new Date(order.created_at).toLocaleDateString('en-IN'),
-        item_details: item
-      })) || []
-    );
-  };
-
+        item_details: null,
+        has_empty_items: true
+      }];
+    }
+    
+    // Normal orders with items
+    return order.items.map(item => ({
+      id: order.id,
+      order_id: `ORD-${String(order.id).padStart(3, '0')}`,
+      customer: order.user_details?.name || 'Customer',
+      customer_email: order.user_details?.email || 'N/A',
+      product: item.product?.name || 'Product',
+      quantity: item.qty || 1,
+      amount: parseFloat(item.price || 0) * (item.qty || 1),
+      total_order_amount: parseFloat(order.total_amount || 0),
+      status: order.status || 'pending',
+      payment_status: order.payment_status || 'unpaid',
+      date: new Date(order.created_at).toLocaleDateString('en-IN'),
+      item_details: item
+    }));
+  });
+};
   const displayOrders = formatOrdersForDisplay();
 
   const getStatusBadge = (status) => {

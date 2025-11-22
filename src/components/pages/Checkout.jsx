@@ -11,6 +11,10 @@ const Checkout = () => {
   const locationState = location.state || {};
   const fromCart = locationState.fromCart || false;
 
+  // ✅ FIXED: Add debug logging to see what's in locationState
+  console.log('🔍 DEBUG - Location State:', locationState);
+  console.log('🔍 DEBUG - From Cart:', fromCart);
+
   let cartTotal, totalItems, totalAmount;
   let orderItems = [];
 
@@ -19,26 +23,40 @@ const Checkout = () => {
     totalItems = getTotalItems();
     totalAmount = cartTotal;
 
-    orderItems = cart?.items?.map(item => ({
-      product: item.product?.name || 'Product',
-      product_id: item.product?.id,
-      quantity: item.qty || 1,
-      price: parseFloat(item.price || item.product?.price || 0),
-      total: (parseFloat(item.price || item.product?.price || 0) * (item.qty || 1))
-    })) || [];
+    // ✅ FIXED: Enhanced cart items with proper product_id
+    orderItems = cart?.items?.map(item => {
+      const productId = item.product?.id || item.product_id;
+      console.log('🔍 DEBUG - Cart Item:', item, 'Product ID:', productId);
+      
+      return {
+        product: item.product?.name || 'Product',
+        product_id: productId, // ✅ Ensure product_id is included
+        quantity: item.qty || 1,
+        price: parseFloat(item.price || item.product?.price || 0),
+        total: (parseFloat(item.price || item.product?.price || 0) * (item.qty || 1))
+      };
+    }) || [];
   } else {
     cartTotal = locationState.total || 0;
     totalItems = locationState.quantity || 1;
     totalAmount = locationState.total || 0;
 
+    // ✅ FIXED: Single product with proper product_id extraction
+    const productId = locationState.product_id || locationState.id;
+    console.log('🔍 DEBUG - Single Product ID:', productId);
+    
     orderItems = [{
-      product: locationState.product || 'Product',
-      product_id: locationState.product_id,
+      product: locationState.product || locationState.name || 'Product',
+      product_id: productId, // ✅ This is critical
       quantity: locationState.quantity || 1,
       price: locationState.price || 0,
       total: locationState.total || 0
     }];
   }
+
+  // ✅ FIXED: Debug the final orderItems
+  console.log('✅ FINAL Order Items:', orderItems);
+  console.log('✅ First item product_id:', orderItems[0]?.product_id);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -191,7 +209,7 @@ Thank you for your purchase!`;
     }
   };
 
-  // ✅ FIXED: Payment Process - MAIN FIX
+  // ✅ FIXED: Payment Process with Enhanced Debugging
   const handlePayment = async () => {
     try {
       setLoading(true);
@@ -200,6 +218,15 @@ Thank you for your purchase!`;
       console.log('💰 Starting payment process...');
       console.log('📦 Order items:', orderItems);
       console.log('💳 Total amount:', totalAmount);
+
+      // ✅ FIXED: Validate product_id before proceeding
+      const missingProductIds = orderItems.filter(item => !item.product_id);
+      if (missingProductIds.length > 0) {
+        console.error('❌ Missing product_id in items:', missingProductIds);
+        setError('Product information is missing. Please try again.');
+        setLoading(false);
+        return;
+      }
 
       // Step 1: Razorpay script load
       const scriptLoaded = await loadRazorpayScript();
@@ -249,14 +276,22 @@ Thank you for your purchase!`;
           console.log('💰 Razorpay payment response:', response);
 
           try {
-            // ✅ FIXED: Complete verification payload
+            // ✅ FIXED: Enhanced verification payload with validation
             const verifyPayload = {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_order_id: response.razorpay_order_id,
               razorpay_signature: response.razorpay_signature,
-              total_amount: totalAmount, // ✅ REQUIRED
-              items: orderItems, // ✅ REQUIRED
-              order_type: fromCart ? 'cart' : 'single_product' // ✅ REQUIRED
+              total_amount: totalAmount,
+              items: orderItems.map(item => {
+                console.log('🔍 Sending item to backend:', item);
+                return {
+                  product_id: item.product_id,
+                  product: item.product,
+                  quantity: item.quantity,
+                  price: item.price
+                };
+              }),
+              order_type: fromCart ? 'cart' : 'single_product'
             };
 
             console.log('📤 Sending verification payload:', verifyPayload);
@@ -265,7 +300,7 @@ Thank you for your purchase!`;
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}` // ✅ Always send token
+                'Authorization': `Bearer ${token}`
               },
               body: JSON.stringify(verifyPayload)
             });
@@ -408,7 +443,6 @@ Thank you for your purchase!`;
           <Card className="p-4 mb-4">
             <h4 className="mb-4">Shipping Information</h4>
             <Form onSubmit={handleSubmit}>
-              {/* Form fields remain same */}
               <Row>
                 <Col md={6}>
                   <Form.Group className="mb-3">
@@ -570,6 +604,10 @@ Thank you for your purchase!`;
                   <div className="fw-semibold">{item.product}</div>
                   <small className="text-muted">
                     Qty: {item.quantity} × ₹{item.price.toFixed(2)}
+                  </small>
+                  <br />
+                  <small className="text-info">
+                    Product ID: {item.product_id || 'Not available'}
                   </small>
                 </div>
                 <span className="fw-semibold">₹{item.total.toFixed(2)}</span>

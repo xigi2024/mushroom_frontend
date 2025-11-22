@@ -163,14 +163,7 @@ const Accounts = () => {
                       />
                     </InputGroup>
                     
-                    <Button 
-                      variant="primary" 
-                      className="d-flex align-items-center gap-2"
-                      onClick={() => setShowModal(true)}
-                    >
-                      <FiPlus size={16} />
-                      Add User
-                    </Button>
+               
                   </div>
                 </Card.Header>
                 <Card.Body className="p-0">

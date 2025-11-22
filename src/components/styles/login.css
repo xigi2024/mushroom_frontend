@@ -1,12 +1,13 @@
 .login-container {  
-    max-width: 900px;
+    max-width: 1000px;
   }
   .login-card {
     background: #fff;
     border-radius: 12px;
     overflow: hidden;
-    max-width: 1200px;
+    max-width: 1000px;
     margin: 0 auto;
+    height: 550px;
   }
   .login-left {
     background-color: #f8f9fa;
