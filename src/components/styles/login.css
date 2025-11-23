@@ -7,7 +7,7 @@
     overflow: hidden;
     max-width: 1000px;
     margin: 0 auto;
-    height: 550px;
+
   }
   .login-left {
     background-color: #f8f9fa;
@@ -43,4 +43,13 @@
     border-radius: 5px;
   }
   
- 
+ .login-image{
+  height: 550px;
+ }
+ @media (max-width: 767px) {
+
+  .login-image{
+  height: 300px;
+  object-fit: cover;
+ }
+}

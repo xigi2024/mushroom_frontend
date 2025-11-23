@@ -140,8 +140,7 @@ if (result.user.role === "admin") {
   <img
     src={mushroomImg}
     alt="Mushroom"
-    className="img-fluid"
-    style={{ maxHeight: "600px" }}
+    className="img-fluid login-image"
   />
 </Col>
 

@@ -312,15 +312,6 @@ const IoTMonitoring = ({ userRole = 'admin' }) => {
                         </small>
                       </div>
 
-                      {/* ✅ MOVED DEBUG INFO HERE - Inside JSX return */}
-                      <div className="alert alert-info">
-                        <strong>Debug Info:</strong><br/>
-                        User ID: {user?.id}<br/>
-                        Orders Count: {userOrders?.length || 0}<br/>
-                        Completed Orders: {userOrders?.filter(o => o.status === 'completed' && o.payment_status === 'paid').length || 0}<br/>
-                        Check browser console for detailed order analysis
-                      </div>
-
                       {verificationError && (
                         <div className="alert alert-warning mb-3">
                           <small>Verification issue: {verificationError}</small>

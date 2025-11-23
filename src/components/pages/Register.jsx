@@ -91,9 +91,10 @@ const Register = () => {
   return (
     <div className="register-container">
       <div className="register-wrapper">
-        <Row className="register-card">
+        <div className="register-card">
+          <Row>
           {/* Image Section - col-md-4 */}
-          <Col md={4} className="register-left p-0">
+          <Col md={12}  className="register-left p-0">
             <img
               src="/assets/register.jpg"
               alt="Register"
@@ -103,7 +104,7 @@ const Register = () => {
           </Col>
 
           {/* Form Section - col-md-8 */}
-          <Col md={8} className="register-right">
+          <Col md={12}  className="register-right">
             {success && (
               <div className="alert alert-success mb-3">
                 <strong>🎉 Registration Successful!</strong>
@@ -264,7 +265,8 @@ const Register = () => {
               Already a user? <a href="/login">Login</a>
             </div>
           </Col>
-        </Row>
+          </Row>
+        </div>
       </div>
     </div>
   );

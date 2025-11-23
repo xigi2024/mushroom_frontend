@@ -104,7 +104,7 @@ const ProductDetail = () => {
 
   return (
     <>
-      <Container className="mt-4">
+      <Container className="mt-4 ">
         {/* Breadcrumb */}
         <p className="mb-4">
           <Link to="/" className="text-decoration-none text-success">Home</Link> /{" "}

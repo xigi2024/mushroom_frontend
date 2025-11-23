@@ -234,11 +234,12 @@ const FavouriteProducts = () => {
     return chunks;
   };
 
-  const productChunks = chunkProducts(products, 4);
+const isMobile = window.innerWidth <= 767;
+const productChunks = chunkProducts(products, isMobile ? 1 : 4);
 
   if (loading) {
     return (
-      <section style={{ backgroundColor: "#f1fff0" }} className="py-5 my-5">
+      <section style={{ backgroundColor: "#fff" }} className="py-5 my-5">
         <Container>
           <div
             className="d-flex justify-content-center align-items-center"
@@ -345,7 +346,7 @@ const FavouriteProducts = () => {
                  {product.description && (
                    <Card.Text className=" carousel-text mb-2">
                      {product.description.length > 70
-                       ? product.description.slice(0, 70) + "..."
+                       ? product.description.slice(0, 60) + "..."
                        : product.description}
                    </Card.Text>
                  )}
