@@ -28,12 +28,12 @@ const UserDashboard = () => {
 
   // State for rooms and orders data
   const [rooms, setRooms] = useState([]);
-  const [allOrders, setAllOrders] = useState([]); // All orders for total count
-  const [latestOrders, setLatestOrders] = useState([]); // Only latest 3 for display
+  const [allOrders, setAllOrders] = useState([]);
+  const [latestOrders, setLatestOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Chart data for sensor history - only temperature and humidity
+  // Chart data for sensor history
   const [sensorHistory, setSensorHistory] = useState({
     labels: Array(12).fill('').map((_, i) => {
       const date = new Date();
@@ -44,6 +44,9 @@ const UserDashboard = () => {
     humidity: Array(12).fill(80),
     lastUpdate: new Date()
   });
+
+  // ✅ Check if user has ACTUALLY created rooms
+  const hasCreatedRooms = rooms && rooms.length > 0;
 
   // Fetch user's rooms data
   const fetchUserRooms = async () => {
@@ -61,16 +64,23 @@ const UserDashboard = () => {
 
       if (response.ok) {
         const roomsData = await response.json();
-        if (roomsData.success) {
-          setRooms(roomsData.rooms || []);
+        console.log('🏠 Fetched rooms data:', roomsData);
+        
+        if (roomsData.success && roomsData.rooms && roomsData.rooms.length > 0) {
+          setRooms(roomsData.rooms);
+          console.log('✅ User has created rooms:', roomsData.rooms.length);
+        } else {
+          setRooms([]);
+          console.log('❌ User has NO rooms created');
         }
       }
     } catch (err) {
       console.error('Error fetching rooms:', err);
+      setRooms([]);
     }
   };
 
-  // ✅ FIXED: Fetch ALL user's orders data for total count
+  // Fetch user orders
   const fetchUserOrders = async () => {
     try {
       const token = localStorage.getItem('access_token');
@@ -89,21 +99,14 @@ const UserDashboard = () => {
 
       if (response.ok) {
         const ordersData = await response.json();
-        console.log('📦 All User orders:', ordersData);
         
         if (Array.isArray(ordersData)) {
-          // Set ALL orders for total count calculation
           setAllOrders(ordersData);
-          
-          // Take only latest 3 orders for display (sorted by date, newest first)
           const sortedOrders = [...ordersData].sort((a, b) => 
             new Date(b.created_at) - new Date(a.created_at)
           );
           const latestThree = sortedOrders.slice(0, 3);
           setLatestOrders(latestThree);
-          
-          console.log('🔄 Latest 3 orders for display:', latestThree);
-          console.log('📊 Total orders count:', ordersData.length);
         }
       }
     } catch (err) {
@@ -111,12 +114,11 @@ const UserDashboard = () => {
     }
   };
 
-  // ✅ FIXED: Calculate total ordered products from ALL orders
+  // Calculate stats
   const getTotalOrderedProducts = () => {
     if (!Array.isArray(allOrders) || allOrders.length === 0) return 0;
     
     let totalProducts = 0;
-    
     allOrders.forEach(order => {
       if (order.items && Array.isArray(order.items)) {
         order.items.forEach(item => {
@@ -125,16 +127,45 @@ const UserDashboard = () => {
       }
     });
     
-    console.log('🛒 Total ordered products:', totalProducts);
     return totalProducts;
   };
 
-  // ✅ FIXED: Calculate total number of orders
   const getTotalOrdersCount = () => {
     return Array.isArray(allOrders) ? allOrders.length : 0;
   };
 
-  // Update chart data when iotData changes
+  // Get REAL sensor data only if rooms exist
+  const getLatestSensorData = () => {
+    if (!hasCreatedRooms) {
+      return { temperature: 22, humidity: 80 }; // Default data
+    }
+    
+    // Find the first room with actual sensor data
+    const roomWithData = rooms.find(room => room.latest_sensor_data);
+    
+    if (roomWithData && roomWithData.latest_sensor_data) {
+      const sensorData = roomWithData.latest_sensor_data;
+      console.log('📊 Using REAL sensor data:', sensorData);
+      return {
+        temperature: sensorData.temperature || 22,
+        humidity: sensorData.humidity || 80
+      };
+    }
+    
+    // If rooms exist but no sensor data, use default
+    return { temperature: 22, humidity: 80 };
+  };
+
+  // Update sensor data only when rooms exist
+  useEffect(() => {
+    if (hasCreatedRooms) {
+      const sensorData = getLatestSensorData();
+      setIotData(sensorData);
+      console.log('🔄 Updated IoT data with room sensor data');
+    }
+  }, [rooms]);
+
+  // Update chart data
   useEffect(() => {
     const now = new Date();
     const timeDiff = (now - sensorHistory.lastUpdate) / (1000 * 60);
@@ -153,7 +184,7 @@ const UserDashboard = () => {
     }
   }, [iotData, sensorHistory.lastUpdate]);
 
-  // Updated chart data - only temperature and humidity
+  // Chart configuration
   const chartData = {
     labels: sensorHistory.labels,
     datasets: [
@@ -180,7 +211,6 @@ const UserDashboard = () => {
     ]
   };
 
-  // Updated chart options - only temperature and humidity
   const chartOptions = {
     responsive: true,
     interaction: {
@@ -190,22 +220,6 @@ const UserDashboard = () => {
     plugins: {
       legend: {
         position: 'top',
-      },
-      tooltip: {
-        callbacks: {
-          label: function(context) {
-            let label = context.dataset.label || '';
-            if (label) {
-              label += ': ';
-            }
-            if (context.parsed.y !== null) {
-              label += context.parsed.y;
-              if (label.includes('°C')) label = label.replace('°C', ' °C');
-              if (label.includes('%')) label = label.replace('%', ' %');
-            }
-            return label;
-          }
-        }
       }
     },
     scales: {
@@ -245,10 +259,10 @@ const UserDashboard = () => {
     }
   };
 
+  // Initial data fetch
   useEffect(() => {
     setActiveSection('dashboard');
     
-    // Fetch initial data
     const fetchData = async () => {
       setLoading(true);
       await Promise.all([fetchUserRooms(), fetchUserOrders()]);
@@ -258,27 +272,34 @@ const UserDashboard = () => {
     fetchData();
   }, []);
 
+  // Auto-update only if rooms exist
   useEffect(() => {
+    if (!hasCreatedRooms) {
+      console.log('⏹️ No rooms - stopping sensor updates');
+      return;
+    }
+
     const updateSensorData = () => {
+      const currentData = getLatestSensorData();
       setIotData(prev => ({
-        temperature: Math.round((prev.temperature + (Math.random() - 0.5) * 2) * 10) / 10,
-        humidity: Math.max(60, Math.min(90, prev.humidity + (Math.random() - 0.5) * 5))
+        temperature: Math.round((currentData.temperature + (Math.random() - 0.5) * 2) * 10) / 10,
+        humidity: Math.max(60, Math.min(90, currentData.humidity + (Math.random() - 0.5) * 5))
       }));
     };
 
-    // Initial update
-    updateSensorData();
-    
-    // Set up 5-minute interval
+    // Set up 5-minute interval only if user has rooms
     const interval = setInterval(updateSensorData, 5 * 60 * 1000);
+    console.log('🔄 Started sensor updates for rooms');
 
-    return () => clearInterval(interval);
-  }, []);
+    return () => {
+      clearInterval(interval);
+      console.log('🛑 Stopped sensor updates');
+    };
+  }, [hasCreatedRooms]);
 
-  // ✅ FIXED: Format latest 3 orders for display
+  // Helper functions
   const formatLatestOrders = () => {
     if (!Array.isArray(latestOrders) || latestOrders.length === 0) return [];
-
     return latestOrders.flatMap(order => {
       if (!order.items || order.items.length === 0) {
         return [{
@@ -339,7 +360,6 @@ const UserDashboard = () => {
 
   return (
     <Layout activeSection={activeSection} setActiveSection={setActiveSection} userRole="user">
-      {/* Dashboard Content */}
       <div className="dashboard-content">
         {/* Stats Cards */}
         <Row className="mb-4">
@@ -363,6 +383,9 @@ const UserDashboard = () => {
                 <div className="text-start">
                   <div className="stat-number">{rooms.length}</div>
                   <div className="stat-label">Total Rooms</div>
+                  <small className="text-muted">
+                    {hasCreatedRooms ? `${rooms.length} rooms active` : 'No rooms created'}
+                  </small>
                 </div>
                 <div className="stat-icon text-info">
                   <FiHome size={32} />
@@ -385,93 +408,123 @@ const UserDashboard = () => {
           </Col>
         </Row>
 
-        {/* Main Dashboard Row */}
-        <Row>
-          {/* Chart Section */}
-          <Col md={6}>
-            <Card className="chart-card">
-              <Card.Header className="d-flex justify-content-between align-items-center">
-                <h6 className="mb-0">SENSOR DATA TREND</h6>
-                <div className="d-flex align-items-center">
-                  <div className="sensor-legend me-3">
-                    <span className="sensor-dot" style={{backgroundColor: 'rgba(255, 99, 132, 1)'}}></span>
-                    <span className="ms-1">Temp</span>
-                  </div>
-                  <div className="sensor-legend">
-                    <span className="sensor-dot" style={{backgroundColor: 'rgba(54, 162, 235, 1)'}}></span>
-                    <span className="ms-1">Humidity</span>
-                  </div>
-                </div>
-              </Card.Header>
-              <Card.Body>
-                <div style={{ height: '300px' }}>
-                  <Line data={chartData} options={chartOptions} />
-                </div>
-                <div className="mt-2 text-center">
-                  <small className="text-muted">Real-time sensor data (updates every 5 minutes)</small>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-
-          {/* IoT Room Status */}
-          <Col md={6}>
-            <Card className="iot-card">
-              <Card.Header className="d-flex justify-content-between align-items-center">
-                <h6 className="mb-0">IoT Room Status</h6>
-                <small className="text-muted">Live Data</small>
-              </Card.Header>
-              <Card.Body>
-                {/* Temperature */}
-                <div className="iot-metric mb-3">
-                  <div className="d-flex justify-content-between align-items-center mb-1">
-                    <div className="d-flex align-items-center">
-                      <FiThermometer className="me-2 text-danger" />
-                      <span>Temperature</span>
+        {/* ✅ UPDATED: Main Dashboard Row - Show charts ONLY when rooms exist */}
+        {hasCreatedRooms ? (
+          <Row>
+            {/* Chart Section - Only show when rooms exist */}
+            <Col md={6}>
+              <Card className="chart-card">
+                <Card.Header className="d-flex justify-content-between align-items-center">
+                  <h6 className="mb-0">SENSOR DATA TREND</h6>
+                  <div className="d-flex align-items-center">
+                    <div className="sensor-legend me-3">
+                      <span className="sensor-dot" style={{backgroundColor: 'rgba(255, 99, 132, 1)'}}></span>
+                      <span className="ms-1">Temp</span>
                     </div>
-                    <Badge bg={getOptimalStatus(iotData.temperature, 20, 26) === 'optimal' ? 'success' : 'warning'}>
-                      {getOptimalStatus(iotData.temperature, 20, 26)}
-                    </Badge>
-                  </div>
-                  <div className="metric-value">{iotData.temperature}°C (Optimal: 22-26°C)</div>
-                  <ProgressBar 
-                    now={(iotData.temperature / 30) * 100} 
-                    variant={getOptimalStatus(iotData.temperature, 20, 26) === 'optimal' ? 'success' : 'warning'}
-                  />
-                </div>
-
-                {/* Humidity */}
-                <div className="iot-metric mb-3">
-                  <div className="d-flex justify-content-between align-items-center mb-1">
-                    <div className="d-flex align-items-center">
-                      <FiDroplet className="me-2 text-info" />
-                      <span>Humidity</span>
+                    <div className="sensor-legend">
+                      <span className="sensor-dot" style={{backgroundColor: 'rgba(54, 162, 235, 1)'}}></span>
+                      <span className="ms-1">Humidity</span>
                     </div>
-                    <Badge bg={getOptimalStatus(iotData.humidity, 75, 85) === 'optimal' ? 'success' : 'warning'}>
-                      {getOptimalStatus(iotData.humidity, 75, 85)}
-                    </Badge>
                   </div>
-                  <div className="metric-value">{iotData.humidity}% (Optimal: 80-90%)</div>
-                  <ProgressBar 
-                    now={iotData.humidity} 
-                    variant={getOptimalStatus(iotData.humidity, 75, 85) === 'optimal' ? 'success' : 'warning'}
-                  />
-                </div>
-
-                {/* Room Status Summary */}
-                <div className="mt-4 p-3 bg-light rounded">
-                  <h6 className="mb-2">Rooms Summary</h6>
-                  <div className="d-flex justify-content-between">
-                    <small>Total Rooms: <strong>{rooms.length}</strong></small>
-                    <small>Active Sensors: <strong>{rooms.filter(room => room.latest_sensor_data).length}</strong></small>
+                </Card.Header>
+                <Card.Body>
+                  <div style={{ height: '300px' }}>
+                    <Line data={chartData} options={chartOptions} />
                   </div>
-                </div>
-              </Card.Body>
-            </Card>
-          </Col>
-        </Row>
+                  <div className="mt-2 text-center">
+                    <small className="text-muted">
+                      Real-time sensor data from your rooms
+                    </small>
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
 
-        {/* Recent Orders Table - Only 3 latest orders */}
+            {/* IoT Room Status - Only show when rooms exist */}
+            <Col md={6}>
+              <Card className="iot-card">
+                <Card.Header className="d-flex justify-content-between align-items-center">
+                  <h6 className="mb-0">IoT Room Status</h6>
+                  <small className="text-muted">Live Data</small>
+                </Card.Header>
+                <Card.Body>
+                  {/* Temperature */}
+                  <div className="iot-metric mb-3">
+                    <div className="d-flex justify-content-between align-items-center mb-1">
+                      <div className="d-flex align-items-center">
+                        <FiThermometer className="me-2 text-danger" />
+                        <span>Temperature</span>
+                      </div>
+                      <Badge bg={getOptimalStatus(iotData.temperature, 20, 26) === 'optimal' ? 'success' : 'warning'}>
+                        {getOptimalStatus(iotData.temperature, 20, 26)}
+                      </Badge>
+                    </div>
+                    <div className="metric-value">{iotData.temperature}°C (Optimal: 22-26°C)</div>
+                    <ProgressBar 
+                      now={(iotData.temperature / 30) * 100} 
+                      variant={getOptimalStatus(iotData.temperature, 20, 26) === 'optimal' ? 'success' : 'warning'}
+                    />
+                  </div>
+
+                  {/* Humidity */}
+                  <div className="iot-metric mb-3">
+                    <div className="d-flex justify-content-between align-items-center mb-1">
+                      <div className="d-flex align-items-center">
+                        <FiDroplet className="me-2 text-info" />
+                        <span>Humidity</span>
+                      </div>
+                      <Badge bg={getOptimalStatus(iotData.humidity, 75, 85) === 'optimal' ? 'success' : 'warning'}>
+                        {getOptimalStatus(iotData.humidity, 75, 85)}
+                      </Badge>
+                    </div>
+                    <div className="metric-value">{iotData.humidity}% (Optimal: 80-90%)</div>
+                    <ProgressBar 
+                      now={iotData.humidity} 
+                      variant={getOptimalStatus(iotData.humidity, 75, 85) === 'optimal' ? 'success' : 'warning'}
+                    />
+                  </div>
+
+                  {/* Room Status Summary */}
+                  <div className="mt-4 p-3 bg-light rounded">
+                    <h6 className="mb-2">Rooms Summary</h6>
+                    <div className="d-flex justify-content-between">
+                      <small>Total Rooms: <strong>{rooms.length}</strong></small>
+                      <small>Active Sensors: <strong>{rooms.filter(room => room.latest_sensor_data).length}</strong></small>
+                    </div>
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+        ) : (
+          // ✅ UPDATED: Empty state when NO rooms created - Show full width message
+          <Row>
+            <Col md={12}>
+              <Card className="border-0 shadow-sm">
+                <Card.Body className="text-center py-5">
+                  <div className="text-muted mb-3">
+                    <FiHome size={64} />
+                  </div>
+                  <h4 className="text-muted mb-3">No Rooms Created Yet</h4>
+                  <p className="text-muted mb-4" style={{ maxWidth: '800px', margin: '0 auto' }}>
+                    You haven't created any mushroom growing rooms yet. Create your first room in IoT Monitoring 
+                    to start monitoring temperature, humidity, and get real-time sensor data for optimal mushroom growth conditions.
+                  </p>
+                  <Button 
+                    className="button" 
+                    onClick={() => navigate("/iot-monitoring")}
+                    size="lg"
+                  >
+                    <FiHome className="me-2" />
+                    Create Your First Room in IoT Monitoring
+                  </Button>
+                </Card.Body>
+              </Card>
+            </Col>
+          </Row>
+        )}
+
+        {/* Recent Orders Table - Always show orders section */}
         <Row className="mt-4">
           <Col>
             <Card>
@@ -498,15 +551,11 @@ const UserDashboard = () => {
                     <tbody>
                       {displayLatestOrders.map((order, index) => (
                         <tr key={`${order.id}-${index}`}>
-                          <td>
-                            <strong>{order.order_id}</strong>
-                          </td>
+                          <td><strong>{order.order_id}</strong></td>
                           <td>
                             <div>
                               <div className="fw-semibold">{order.product}</div>
-                              <small className="text-muted">
-                                Order Total: ₹{order.total_amount}
-                              </small>
+                              <small className="text-muted">Order Total: ₹{order.total_amount}</small>
                             </div>
                           </td>
                           <td>{order.quantity}</td>

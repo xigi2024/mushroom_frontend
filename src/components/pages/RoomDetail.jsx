@@ -24,10 +24,10 @@ const RoomDetail = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState(null);
   const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
+  const [userLoginTime, setUserLoginTime] = useState(new Date());
 
   // Refs for intervals
   const pollingIntervalRef = useRef(null);
-  const dataCheckIntervalRef = useRef(null);
 
   // ✅ Configure axios headers with auth token
   const getAuthHeaders = () => {
@@ -43,21 +43,136 @@ const RoomDetail = () => {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
       }
-      if (dataCheckIntervalRef.current) {
-        clearInterval(dataCheckIntervalRef.current);
-      }
     };
   }, []);
+
+// ✅ FIXED - Always show 6 intervals from login time, fill with available data
+const create5MinuteIntervalData = (rawData) => {
+  if (!rawData || rawData.length === 0) {
+    // If no data, create empty intervals starting from login time
+    return createEmptyIntervals();
+  }
+  
+  console.log(`🕒 Processing ${rawData.length} raw data points`);
+  
+  const referenceTime = userLoginTime;
+  console.log('👤 Chart reference time (login time):', referenceTime.toLocaleTimeString());
+  
+  const sortedData = [...rawData].sort((a, b) => 
+    new Date(b.timestamp) - new Date(a.timestamp)
+  );
+  const latestData = sortedData[0]; // Most recent data
+  
+  const intervalData = [];
+  const intervalMs = 5 * 60 * 1000;
+  
+  // ✅ ALWAYS CREATE 6 INTERVALS starting from login time
+  for (let i = 0; i < 6; i++) {
+    const pointTime = new Date(referenceTime.getTime() + (i * intervalMs));
+    
+    // Find the BEST data for this time slot
+    let bestData = null;
+    let bestTimeDiff = Infinity;
+    
+    // Look for exact or close match
+    sortedData.forEach(data => {
+      const dataTime = new Date(data.timestamp);
+      const timeDiff = Math.abs(dataTime - pointTime);
+      
+      if (timeDiff < bestTimeDiff) {
+        bestData = data;
+        bestTimeDiff = timeDiff;
+      }
+    });
+    
+    // If we found reasonably close data (within 7.5 minutes), use it
+    // Otherwise use the most recent data
+    const dataToUse = (bestData && bestTimeDiff <= (7.5 * 60 * 1000)) ? bestData : latestData;
+    
+    if (dataToUse) {
+      intervalData.push({
+        time: pointTime.toLocaleTimeString('en-IN', { 
+          hour: '2-digit', 
+          minute: '2-digit',
+          hour12: true 
+        }).toUpperCase().replace(' ', ''),
+        temperature: dataToUse.temperature,
+        humidity: dataToUse.humidity,
+        timestamp: pointTime.toISOString(),
+        isEstimated: bestTimeDiff > (2.5 * 60 * 1000) // Mark as estimated if not very close
+      });
+    }
+  }
+  
+  console.log(`✅ Created ${intervalData.length} fixed intervals from login time`);
+  console.log('📅 6 Time intervals:', intervalData.map(d => `${d.time}${d.isEstimated ? ' (est)' : ''}`));
+  console.log('🌡️ Temperatures:', intervalData.map(d => d.temperature));
+  console.log('💧 Humidities:', intervalData.map(d => d.humidity));
+  
+  return intervalData;
+};
+
+// ✅ Helper function to create empty intervals when no data
+const createEmptyIntervals = () => {
+  const referenceTime = userLoginTime;
+  const intervalMs = 5 * 60 * 1000;
+  const emptyData = [];
+  
+  for (let i = 0; i < 6; i++) {
+    const pointTime = new Date(referenceTime.getTime() + (i * intervalMs));
+    
+    emptyData.push({
+      time: pointTime.toLocaleTimeString('en-IN', { 
+        hour: '2-digit', 
+        minute: '2-digit',
+        hour12: true 
+      }).toUpperCase().replace(' ', ''),
+      temperature: 0,
+      humidity: 0,
+      timestamp: pointTime.toISOString(),
+      isEstimated: true,
+      isEmpty: true
+    });
+  }
+  
+  console.log('📭 Created empty intervals starting from login time');
+  return emptyData;
+};
+
+// ✅ Updated fetchHistoricalData
+const fetchHistoricalData = async (roomId) => {
+  try {
+    const sensorHistoryResponse = await axios.get(
+      `${API_BASE_URL}/sensor-data/list/`,
+      { headers: getAuthHeaders() }
+    );
+
+    // Filter data for this specific room
+    const allRoomData = sensorHistoryResponse.data
+      .filter(data => data.room === roomId);
+
+    console.log(`📊 Found ${allRoomData.length} data points for room ${roomId}`);
+
+    // Create 6 fixed intervals from login time
+    const roomSensorData = create5MinuteIntervalData(allRoomData);
+
+    setSensorData(roomSensorData);
+    
+  } catch (historyError) {
+    console.log('❌ Error fetching historical data:', historyError);
+    // Even if error, create empty intervals to maintain 6-point chart
+    const emptyData = createEmptyIntervals();
+    setSensorData(emptyData);
+  }
+};
 
   // ✅ Fetch latest sensor data (lightweight - only checks for new data)
   const fetchLatestSensorData = async () => {
     try {
-      const roomDataFromState = location.state?.roomData;
-      
-      if (!roomDataFromState) return;
+      if (!roomInfo) return;
 
       const response = await axios.get(
-        `${API_BASE_URL}/rooms/kit/${roomDataFromState.kit_id}/`,
+        `${API_BASE_URL}/rooms/kit/${roomInfo.kit_id}/`,
         { headers: getAuthHeaders() }
       );
 
@@ -65,58 +180,24 @@ const RoomDetail = () => {
         const roomData = response.data.room;
         const latestSensorData = response.data.latest_sensor_data;
 
-        // Check if we have new data by comparing timestamps
-        const currentLatestTimestamp = roomInfo?.currentStats?.timestamp;
-        const newTimestamp = latestSensorData?.timestamp;
+        // Update room info with new data
+        setRoomInfo(prev => ({
+          ...prev,
+          status: roomData.status || 'optimal',
+          lastUpdated: roomData.updated_at,
+          currentStats: {
+            temperature: latestSensorData?.temperature || roomData.temperature,
+            humidity: latestSensorData?.humidity || roomData.humidity,
+            timestamp: latestSensorData?.timestamp
+          }
+        }));
 
-        if (newTimestamp && currentLatestTimestamp !== newTimestamp) {
-          console.log('🔄 New sensor data detected, updating...');
-          
-          // Update room info with new data
-          setRoomInfo(prev => ({
-            ...prev,
-            status: roomData.status || 'optimal',
-            lastUpdated: roomData.updated_at,
-            currentStats: {
-              temperature: latestSensorData?.temperature || roomData.temperature,
-              humidity: latestSensorData?.humidity || roomData.humidity,
-              timestamp: newTimestamp
-            }
-          }));
-
-          // Fetch updated historical data for charts
-          await fetchHistoricalData(roomData.id);
-          setLastUpdateTime(new Date().toLocaleTimeString());
-        }
+        // Fetch updated historical data for charts
+        await fetchHistoricalData(roomData.id);
+        setLastUpdateTime(new Date().toLocaleTimeString());
       }
     } catch (error) {
       console.log('❌ Error checking latest data:', error);
-    }
-  };
-
-  // ✅ Fetch historical data for charts
-  const fetchHistoricalData = async (roomId) => {
-    try {
-      const sensorHistoryResponse = await axios.get(
-        `${API_BASE_URL}/sensor-data/list/`,
-        { headers: getAuthHeaders() }
-      );
-
-      // Filter data for this specific room
-      const allRoomData = sensorHistoryResponse.data
-        .filter(data => data.room === roomId)
-        .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-
-      console.log(`📊 Found ${allRoomData.length} data points for room ${roomId}`);
-
-      // Create 5-minute interval data points
-      const roomSensorData = create5MinuteIntervalData(allRoomData);
-
-      if (roomSensorData.length > 0) {
-        setSensorData(roomSensorData);
-      }
-    } catch (historyError) {
-      console.log('❌ Error fetching historical data:', historyError);
     }
   };
 
@@ -162,13 +243,9 @@ const RoomDetail = () => {
               }
             });
             
-            // ✅ 2. Get historical sensor data for charts
             await fetchHistoricalData(roomData.id);
             
-            // ✅ 3. Start auto-refresh polling after initial load
-            if (!isRefresh) {
-              startAutoRefresh();
-            }
+            setLastUpdateTime(new Date().toLocaleTimeString());
           }
         } catch (sensorError) {
           console.log('❌ Sensor API error:', sensorError);
@@ -192,19 +269,13 @@ const RoomDetail = () => {
             }
           });
           
-          // Set empty sensor data
-          setSensorData([]);
-          
-          // Start auto-refresh
-          if (!isRefresh) {
-            startAutoRefresh();
-          }
+          await fetchHistoricalData(id);
+          setLastUpdateTime(new Date().toLocaleTimeString());
         } catch (apiError) {
           console.error('❌ API Error:', apiError);
           setError('Failed to load room data from server.');
         }
       }
-      
     } catch (err) {
       console.error('❌ Error fetching room data:', err);
       setError('Failed to load room data. Please try again later.');
@@ -219,29 +290,20 @@ const RoomDetail = () => {
 
   // ✅ Start automatic data polling
   const startAutoRefresh = () => {
-    // Clear existing intervals
+    // Clear existing interval
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
     }
-    if (dataCheckIntervalRef.current) {
-      clearInterval(dataCheckIntervalRef.current);
-    }
 
-    // Poll every 10 seconds for new data
+    // Poll every 30 seconds for new data
     pollingIntervalRef.current = setInterval(() => {
-      if (autoRefreshEnabled) {
-        fetchLatestSensorData();
-      }
-    }, 10000); // 10 seconds
-
-    // Additional check every 30 seconds for data consistency
-    dataCheckIntervalRef.current = setInterval(() => {
       if (autoRefreshEnabled && roomInfo?.id) {
-        fetchHistoricalData(roomInfo.id);
+        console.log('🔄 Auto-refresh fetching latest data...');
+        fetchLatestSensorData();
       }
     }, 30000); // 30 seconds
 
-    console.log('🔄 Auto-refresh started (10s intervals)');
+    console.log('🔄 Auto-refresh started (30s intervals)');
   };
 
   // ✅ Stop automatic data polling
@@ -249,10 +311,6 @@ const RoomDetail = () => {
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
       pollingIntervalRef.current = null;
-    }
-    if (dataCheckIntervalRef.current) {
-      clearInterval(dataCheckIntervalRef.current);
-      dataCheckIntervalRef.current = null;
     }
     console.log('🛑 Auto-refresh stopped');
   };
@@ -274,12 +332,20 @@ const RoomDetail = () => {
       return;
     }
     
+    // Set login time when component mounts
+    setUserLoginTime(new Date());
     fetchRoomData();
     
     return () => {
       stopAutoRefresh();
     };
   }, [id, location.state, isAuthenticated, token, navigate]);
+
+  useEffect(() => {
+    if (roomInfo?.id && autoRefreshEnabled) {
+      startAutoRefresh();
+    }
+  }, [roomInfo, autoRefreshEnabled]);
 
   // ✅ Handle back to monitoring page
   const handleBackToMonitoring = () => {
@@ -291,136 +357,77 @@ const RoomDetail = () => {
     fetchRoomData(true);
   };
 
-  // ✅ Fixed 5-minute interval data processing
-  const create5MinuteIntervalData = (rawData) => {
-    if (!rawData || rawData.length === 0) return [];
-    
-    console.log(`🕒 Processing ${rawData.length} raw data points into 5-minute intervals`);
-    
-    // Sort by timestamp (newest first)
-    const sortedData = [...rawData].sort((a, b) => 
-      new Date(b.timestamp) - new Date(a.timestamp)
-    );
-    
-    // Take only the last 6-8 data points for clean display (like reference image)
-    const recentData = sortedData.slice(0, 8);
-    
-    console.log(`📊 Using ${recentData.length} most recent data points`);
-    
-    // Create exact 5-minute interval points
-    const intervalData = [];
-    const intervalMs = 5 * 60 * 1000; // 5 minutes in milliseconds
-    
-    // Start from the most recent data point and go backwards in 5-minute intervals
-    if (recentData.length > 0) {
-      const latestTimestamp = new Date(recentData[0].timestamp);
-      
-      // Create 6 data points at 5-minute intervals going backwards
-      for (let i = 0; i < 6; i++) {
-        const pointTime = new Date(latestTimestamp.getTime() - (i * intervalMs));
-        
-        // Find the closest data point to this time
-        const closestData = recentData.reduce((closest, current) => {
-          const currentTime = new Date(current.timestamp);
-          const currentDiff = Math.abs(currentTime - pointTime);
-          const closestDiff = closest ? Math.abs(new Date(closest.timestamp) - pointTime) : Infinity;
-          
-          return currentDiff < closestDiff ? current : closest;
-        }, null);
-        
-        if (closestData) {
-          intervalData.unshift({
-            time: pointTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            temperature: closestData.temperature,
-            humidity: closestData.humidity,
-            timestamp: pointTime.toISOString(),
-            isEstimated: Math.abs(new Date(closestData.timestamp) - pointTime) > intervalMs / 2
-          });
-        }
-      }
-    }
-    
-    console.log(`✅ Created ${intervalData.length} exact 5-minute interval data points`);
-    console.log('📅 Time points:', intervalData.map(d => d.time));
-    
-    return intervalData;
-  };
-
-  // Render different chart types
-  const renderChart = (dataKey, color, name, unit = '', chartType = 'line') => {
-    const ChartComponent = chartType === 'area' ? AreaChart : LineChart;
-    const DataComponent = chartType === 'area' ? Area : Line;
-
-    return (
-      <Card className="mb-4 chart-card border-0 shadow-sm">
-        <Card.Header className="bg-white border-bottom-0 pb-2">
-          <div className="d-flex justify-content-between align-items-center">
-            <h6 className="mb-0 fw-bold">{name}</h6>
-            <div className="d-flex align-items-center gap-2">
-              <Badge bg="light" text="dark" className="px-2 py-1">
-                {sensorData.length > 0 ? `${sensorData[sensorData.length - 1][dataKey]}${unit}` : `--${unit}`}
-              </Badge>
-              {lastUpdateTime && (
-                <small className="text-muted" title="Last auto-update">
-                  <FiRadio size={12} className="text-success me-1" />
-                  {lastUpdateTime}
-                </small>
-              )}
-            </div>
-          </div>
-        </Card.Header>  
-        <Card.Body className="pt-0">
-          <div style={{ height: '200px' }}>
-            {sensorData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <ChartComponent
-                  data={sensorData}
-                  margin={{
-                    top: 10,
-                    right: 10,
-                    left: 10,
-                    bottom: 10,
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis 
-                    dataKey="time" 
-                    tick={{ fontSize: 11 }}
-                    interval={0}
-                  />
-                  <YAxis 
-                    tick={{ fontSize: 11 }}
-                    domain={['dataMin - 2', 'dataMax + 2']}
-                  />
-                  <Tooltip 
-                    formatter={(value) => [`${value}${unit}`, name]}
-                    labelFormatter={(label) => {
-                      const dataPoint = sensorData.find(d => d.time === label);
-                      return `Time: ${label}`;
-                    }}
-                  />
-                  <DataComponent
-                    type="monotone"
-                    dataKey={dataKey}
-                    stroke={color}
-                    fill={chartType === 'area' ? `${color}20` : undefined}
-                    strokeWidth={2}
-                    dot={{ r: 3 }}
-                    activeDot={{ r: 5, fill: color }}
-                    name={name}
-                  />
-                </ChartComponent>
-              </ResponsiveContainer>
-            ) : (
-              <div className="d-flex justify-content-center align-items-center h-100">
-                <p className="text-muted">No sensor data available</p>
-              </div>
+// ✅ Updated renderChart function
+const renderChart = (dataKey, color, name, unit = '') => {
+  const hasValidData = sensorData.length > 0 && sensorData.some(d => !d.isEmpty && d[dataKey] > 0);
+  
+  return (
+    <Card className="mb-4 chart-card border-0 shadow-sm">
+      <Card.Header className="bg-white border-bottom-0 pb-2">
+        <div className="d-flex justify-content-between align-items-center">
+          <h6 className="mb-0 fw-bold">{name}</h6>
+          <div className="d-flex align-items-center gap-2">
+            <Badge bg="light" text="dark" className="px-2 py-1">
+              {hasValidData ? `${sensorData[sensorData.length - 1][dataKey]}${unit}` : `--${unit}`}
+            </Badge>
+            {lastUpdateTime && (
+              <small className="text-muted" title="Last auto-update">
+                <FiRadio size={12} className="text-success me-1" />
+                {lastUpdateTime}
+              </small>
             )}
           </div>
-        </Card.Body>
-      </Card>
-    );
-  };
+        </div>
+      </Card.Header>  
+      <Card.Body className="pt-0">
+        <div style={{ height: '200px' }}>
+          {hasValidData ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart
+                data={sensorData}
+                margin={{
+                  top: 10,
+                  right: 10,
+                  left: 10,
+                  bottom: 10,
+                }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis 
+                  dataKey="time" 
+                  tick={{ fontSize: 11 }}
+                  interval={0}
+                />
+                <YAxis 
+                  tick={{ fontSize: 11 }}
+                  domain={['dataMin - 1', 'dataMax + 1']}
+                />
+                <Tooltip 
+                  formatter={(value) => [`${value}${unit}`, name]}
+                  labelFormatter={(label) => `Time: ${label}`}
+                />
+                <Area
+                  type="monotone"
+                  dataKey={dataKey}
+                  stroke={color}
+                  fill={`${color}20`}
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5, fill: color }}
+                  name={name}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="d-flex justify-content-center align-items-center h-100">
+              <p className="text-muted">Waiting for sensor data...</p>
+            </div>
+          )}
+        </div>
+      </Card.Body>
+    </Card>
+  );
+};
 
   const renderCurrentStats = () => (
     <Row className="mb-4 g-3">
@@ -552,7 +559,8 @@ const RoomDetail = () => {
                 <h2 className="mb-1">{roomInfo.name}</h2>
                 <p className="text-muted mb-0">
                   <FiClock className="me-1" />
-                  Last updated: {roomInfo.lastUpdated ? new Date(roomInfo.lastUpdated).toLocaleString() : 'Never'}
+                  Login Time: {userLoginTime.toLocaleTimeString()}
+                  {roomInfo.lastUpdated && ` • Last data: ${new Date(roomInfo.lastUpdated).toLocaleTimeString()}`}
                 </p>
               </div>
             </div>
@@ -591,7 +599,7 @@ const RoomDetail = () => {
               <div className="d-flex align-items-center">
                 <FiRadio className="me-2" />
                 <small>
-                  <strong>Live Updates:</strong> Data refreshes automatically every 10 seconds
+                  <strong>Live Updates:</strong> Data refreshes automatically every 30 seconds
                   {lastUpdateTime && ` • Last update: ${lastUpdateTime}`}
                 </small>
               </div>
@@ -604,10 +612,10 @@ const RoomDetail = () => {
           {/* Charts Grid - ONLY TEMP & HUMIDITY */}
           <Row>
             <Col lg={6} className="mb-4">
-              {renderChart('temperature', '#ff6b6b', 'Temperature', '°C', 'area')}
+              {renderChart('temperature', '#ff6b6b', 'Temperature', '°C')}
             </Col>
             <Col lg={6} className="mb-4">
-              {renderChart('humidity', '#4dabf7', 'Humidity', '%', 'area')}
+              {renderChart('humidity', '#4dabf7', 'Humidity', '%')}
             </Col>
           </Row>
 
@@ -643,6 +651,33 @@ const RoomDetail = () => {
                           • <Badge bg="danger">Critical</Badge>: Outside optimal ranges
                         </small>
                       </div>
+                    </div>
+                  </div>
+                </Card.Body>
+              </Card>
+            </Col>
+            <Col md={6}>
+              <Card className="border-0 shadow-sm">
+                <Card.Header className="bg-white border-bottom-0">
+                  <h6 className="mb-0 fw-bold">Room Details</h6>
+                </Card.Header>
+                <Card.Body>
+                  <div className="row">
+                    <div className="col-6 mb-3">
+                      <small className="text-muted">Kit ID</small>
+                      <div className="fw-bold">{roomInfo.kit_id}</div>
+                    </div>
+                    <div className="col-6 mb-3">
+                      <small className="text-muted">Room Type</small>
+                      <div className="fw-bold">{roomInfo.type}</div>
+                    </div>
+                    <div className="col-6 mb-3">
+                      <small className="text-muted">Capacity</small>
+                      <div className="fw-bold">{roomInfo.capacity}</div>
+                    </div>
+                    <div className="col-6 mb-3">
+                      <small className="text-muted">Chart Start</small>
+                      <div className="fw-bold">{userLoginTime.toLocaleTimeString()}</div>
                     </div>
                   </div>
                 </Card.Body>

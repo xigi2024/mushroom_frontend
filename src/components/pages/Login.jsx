@@ -217,17 +217,9 @@ if (result.user.role === "admin") {
               )}
             </div>
 
-            <p className="text-end mt-1">
-              <span
-                style={{ cursor: "pointer" }}
-                onClick={() => navigate("/forgot-password")}
-                className="color fw-semibold para"
-              >
-                Forgot Password?
-              </span>
-            </p>
+          
 
-            <div className="text-center">
+            <div className="text-center mt-4">
               <button
                 type="submit"
                 className="button p-2 para border rounded w-100"

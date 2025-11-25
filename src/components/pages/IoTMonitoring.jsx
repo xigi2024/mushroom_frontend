@@ -14,7 +14,6 @@ const IoTMonitoring = ({ userRole = 'admin' }) => {
   const navigate = useNavigate();
   const { isAuthenticated, user, token, loading: authLoading } = useAuth();
   
-  // ✅ All hooks must be called unconditionally at the top
   const { hasIoTKit, loading: verificationLoading, error: verificationError, userOrders } = useIoTKitVerification(token);
 
   const [activeSection, setActiveSection] = useState('iot-monitoring');
@@ -36,7 +35,9 @@ const IoTMonitoring = ({ userRole = 'admin' }) => {
   const [formError, setFormError] = useState('');
   const [formSuccess, setFormSuccess] = useState('');
 
-  // Debug logging - this is fine as it's not JSX
+  // ✅ NEW: Check if user has rooms directly from API (bypass IoT kit verification)
+  const [hasRoomsDirect, setHasRoomsDirect] = useState(false);
+
   console.log('🔍 IoT Kit Verification Status:', {
     hasIoTKit,
     verificationLoading,
@@ -45,7 +46,6 @@ const IoTMonitoring = ({ userRole = 'admin' }) => {
     isAuthenticated
   });
 
-  // ✅ Configure axios headers with auth token
   const getAuthHeaders = () => {
     return {
       'Authorization': `Bearer ${token}`,
@@ -75,7 +75,9 @@ const IoTMonitoring = ({ userRole = 'admin' }) => {
         const roomsWithData = response.data.rooms;
         setRooms(roomsWithData);
         
-        // ✅ Update stats with real data
+        // ✅ NEW: Set hasRoomsDirect based on actual rooms data
+        setHasRoomsDirect(roomsWithData.length > 0);
+        
         const roomsWithSensors = roomsWithData.filter(room => room.latest_sensor_data);
 
         setTotalStats({
@@ -110,11 +112,13 @@ const IoTMonitoring = ({ userRole = 'admin' }) => {
   };
 
   useEffect(() => {
-    if (hasIoTKit && !verificationLoading) {
-      console.log('User has IoT kit, fetching rooms...');
+    // ✅ UPDATED: Fetch rooms regardless of IoT kit verification
+    // This allows users with existing rooms to access their data
+    if (!verificationLoading) {
+      console.log('Fetching rooms...');
       fetchRooms();
     }
-  }, [hasIoTKit, verificationLoading]);
+  }, [verificationLoading]);
 
   // ✅ Handle Add Room with authentication
   const handleInputChange = (e) => {
@@ -274,8 +278,8 @@ const IoTMonitoring = ({ userRole = 'admin' }) => {
     return null;
   }
 
-  // Show purchase prompt if user doesn't have IoT controller
-  if (!hasIoTKit && !verificationLoading) {
+  // ✅ UPDATED: Show purchase prompt ONLY if user doesn't have IoT kit AND doesn't have any rooms
+  if (!hasIoTKit && !hasRoomsDirect && !verificationLoading && !loading) {
     return (
       <div className="dashboard-container">
         <Sidebar activeSection={activeSection} setActiveSection={setActiveSection} userRole={userRole} />
@@ -338,7 +342,7 @@ const IoTMonitoring = ({ userRole = 'admin' }) => {
   }
 
   // Show error state
-  if (verificationError && !hasIoTKit) {
+  if (verificationError && !hasIoTKit && !hasRoomsDirect) {
     return (
       <div className="dashboard-container">
         <Sidebar activeSection={activeSection} setActiveSection={setActiveSection} userRole={userRole} />
@@ -379,7 +383,8 @@ const IoTMonitoring = ({ userRole = 'admin' }) => {
     );
   }
 
-  // MAIN IOT MONITORING CONTENT (only shown if user has IoT kit)
+  // ✅ UPDATED: MAIN IOT MONITORING CONTENT 
+  // Now shown if user has IoT kit OR has existing rooms
   return (
     <div className="dashboard-container">
       <Sidebar activeSection={activeSection} setActiveSection={setActiveSection} userRole={userRole} />
@@ -392,6 +397,12 @@ const IoTMonitoring = ({ userRole = 'admin' }) => {
                 <h2 className="mb-1">IoT Monitoring</h2>
                 <p className="text-muted mb-0">Real-time monitoring of all mushroom growing rooms</p>
                 <small className="text-info">Welcome, {user?.name || user?.email}!</small>
+                {/* ✅ NEW: Show access type */}
+                {hasRoomsDirect && !hasIoTKit && (
+                  <small className="text-warning d-block">
+                    🔄 Accessing existing rooms (IoT kit verification pending)
+                  </small>
+                )}
               </div>
               <Button 
                 variant="outline-primary" 
